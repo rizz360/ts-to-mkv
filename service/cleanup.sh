@@ -352,24 +352,30 @@ process_file() {
 }
 
 process_files_sequential() {
-    local queue_file="$1"
+    local -a file_list
     
-    while IFS= read -r file; do
+    # Use mapfile to properly handle filenames with special characters
+    mapfile -t file_list < "$1"
+    
+    for file in "${file_list[@]}"; do
         if [ -z "$file" ]; then
             continue
         fi
         process_file "$file"
-    done < "$queue_file"
+    done
 }
 
 process_files_parallel() {
-    local queue_file="$1"
+    local -a file_list
     local -a pids=()
     local job_count=0
     
+    # Use mapfile to properly handle filenames with special characters
+    mapfile -t file_list < "$1"
+    
     log_info "Processing files with up to $MAX_CONCURRENT_JOBS concurrent jobs"
     
-    while IFS= read -r file; do
+    for file in "${file_list[@]}"; do
         if [ -z "$file" ]; then continue; fi
         
         # Wait for a slot if we're at max capacity
@@ -397,7 +403,7 @@ process_files_parallel() {
         pids+=("$new_pid")
         ((job_count++))
         
-    done < "$queue_file"
+    done
     
     # Wait for remaining jobs to complete
     log_info "Waiting for remaining $job_count jobs to complete..."
