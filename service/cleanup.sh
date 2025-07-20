@@ -51,6 +51,10 @@ PRESET_SD="${PRESET_SD:-medium}"
 SKIP_ALREADY_HEVC="${SKIP_ALREADY_HEVC:-true}"
 HEVC_BITRATE_THRESHOLD="${HEVC_BITRATE_THRESHOLD:-3000000}"
 
+# Temporary file management
+TEMP_DIR="${TEMP_DIR:-/tmp/ts-processing}"
+CLEANUP_TEMP_ON_FAILURE="${CLEANUP_TEMP_ON_FAILURE:-true}"
+
 # --- Logging Functions ---
 log_info() {
     printf "[%s] [INFO] %s\n" "$(date +'%Y-%m-%d %H:%M:%S')" "$1"
@@ -292,19 +296,30 @@ process_file() {
     local output_rel="${base_path}.${suffix}.mkv"
     local output_path="${OUTPUT_DIR}/${output_rel}"
 
-    local output_dir
-    output_dir=$(dirname "$output_path")
-    local temp_output_path="${output_dir}/.temp_$(basename "$output_path")"
+    # Use a dedicated temporary directory for processing
+    local temp_job_dir="${TEMP_DIR}/$(basename "${base_path}").$$"
+    local temp_output_path="${temp_job_dir}/$(basename "$output_path")"
+
+    # Cleanup function for the temporary directory
+    cleanup() {
+        if [[ "$CLEANUP_TEMP_ON_FAILURE" != "true" ]] && [[ "${1:-}" == "failure" ]]; then
+            log_warn "Temporary files for failed job kept at $temp_job_dir"
+        else
+            rm -rf "$temp_job_dir"
+        fi
+    }
 
     if [[ -f "$output_path" ]]; then
         log_info "Skipping, final file already exists: $file"
         return
     fi
 
-    rm -f "$temp_output_path"
-    mkdir -p "$output_dir"
+    # Ensure temp and output directories exist
+    mkdir -p "$temp_job_dir"
+    mkdir -p "$(dirname "$output_path")"
 
     log_info "Processing ${file} (${video_info[size_gb]}GB, ${video_info[res_label]}, ${video_info[video_codec]}, ${video_info[video_bitrate]} bps)"
+    log_info "Using temporary directory: $temp_job_dir"
 
     local success=false
     
@@ -319,8 +334,9 @@ process_file() {
     fi
 
     if [[ "$success" == "true" ]]; then
-        log_info "Processing successful, renaming to final destination."
+        log_info "Processing successful, moving to final destination."
         mv "$temp_output_path" "$output_path"
+        cleanup "success"
 
         log_info "Successfully created $output_path"
         echo "$file" >> "$LOG_DIR/done.log"
@@ -347,7 +363,7 @@ process_file() {
     else
         log_error "Failed to process $file"
         echo "$file" >> "$LOG_DIR/error.log"
-        rm -f "$temp_output_path"
+        cleanup "failure"
     fi
 }
 
@@ -418,6 +434,7 @@ main() {
     ntfy_send "Getting started..."
 
     mkdir -p "$LOG_DIR"
+    mkdir -p "$TEMP_DIR" # Ensure base temp directory exists
     local queue_file="$LOG_DIR/queue.log"
     >"$queue_file"
     >"$LOG_DIR/current.log"
