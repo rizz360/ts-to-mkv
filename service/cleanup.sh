@@ -14,13 +14,42 @@ LOG_DIR="/service/logs"
 INPUT_DIR="/input"
 OUTPUT_DIR="/output"
 
+# Set defaults for all configuration variables
 DELETE_TS="${DELETE_TS:-false}"
-REMUX_SIZE_GB="${REMUX_SIZE_GB:-2}"
+REMUX_SIZE_GB="${REMUX_SIZE_GB:-3}"
 VIDEO_CODEC="${VIDEO_CODEC:-hevc_qsv}"
-VIDEO_BITRATE="${VIDEO_BITRATE:-2500k}"
-VIDEO_PRESET="${VIDEO_PRESET:-fast}"
 AUDIO_CODEC="${AUDIO_CODEC:-copy}"
 REMUX_FALLBACK_NO_SUBTITLES="${REMUX_FALLBACK_NO_SUBTITLES:-true}"
+
+# Parallel processing settings
+ENABLE_PARALLEL_PROCESSING="${ENABLE_PARALLEL_PROCESSING:-false}"
+MAX_CONCURRENT_JOBS="${MAX_CONCURRENT_JOBS:-2}"
+
+# Processing logic settings
+FORCE_ENCODE_SD="${FORCE_ENCODE_SD:-true}"
+
+# Resolution-specific bitrates
+BITRATE_1080="${BITRATE_1080:-4000k}"
+BITRATE_720="${BITRATE_720:-2500k}"
+BITRATE_576="${BITRATE_576:-1500k}"
+BITRATE_480="${BITRATE_480:-1200k}"
+BITRATE_DEFAULT="${BITRATE_DEFAULT:-2000k}"
+
+# CRF settings
+USE_CRF="${USE_CRF:-false}"
+CRF_1080="${CRF_1080:-23}"
+CRF_720="${CRF_720:-24}"
+CRF_576="${CRF_576:-26}"
+CRF_480="${CRF_480:-28}"
+CRF_DEFAULT="${CRF_DEFAULT:-24}"
+
+# Preset settings
+PRESET_HD="${PRESET_HD:-fast}"
+PRESET_SD="${PRESET_SD:-medium}"
+
+# Advanced settings
+SKIP_ALREADY_HEVC="${SKIP_ALREADY_HEVC:-true}"
+HEVC_BITRATE_THRESHOLD="${HEVC_BITRATE_THRESHOLD:-3000000}"
 
 # --- Logging Functions ---
 log_info() {
@@ -37,9 +66,11 @@ log_error() {
 
 ntfy_send() {
     local message="$1"
-    curl -s -X POST -H "Title: TS-to-MKV" -H "Priority: default" \
-        -d "$message" \
-        "$NTFY_URL" > /dev/null
+    if [[ -n "${NTFY_URL:-}" ]]; then
+        curl -s -X POST -H "Title: TS-to-MKV" -H "Priority: default" \
+            -d "$message" \
+            "$NTFY_URL" > /dev/null || true
+    fi
 }
 
 check_dependencies() {
@@ -70,6 +101,83 @@ get_video_info() {
     else
         info_ref[res_label]="${info_ref[height]}p"
     fi
+
+    # Get additional stream info for optimization decisions
+    info_ref[video_bitrate]=$(echo "$json_data" | jq -r '.streams[] | select(.codec_type=="video") | .bit_rate // "0"')
+    info_ref[video_codec]=$(echo "$json_data" | jq -r '.streams[] | select(.codec_type=="video") | .codec_name // "unknown"')
+}
+
+get_encoding_params() {
+    local resolution="$1"
+    local -n params_ref="$2"
+
+    # Determine bitrate/CRF based on resolution (handles both p and i variants)
+    local res_num="${resolution%[pi]}"
+    
+    if [[ "$USE_CRF" == "true" ]]; then
+        case "$res_num" in
+            1080) params_ref[quality]="-crf $CRF_1080" ;;
+            720) params_ref[quality]="-crf $CRF_720" ;;
+            576) params_ref[quality]="-crf $CRF_576" ;;
+            480) params_ref[quality]="-crf $CRF_480" ;;
+            *) params_ref[quality]="-crf $CRF_DEFAULT" ;;
+        esac
+        
+        # Set maxrate as well for CRF
+        case "$res_num" in
+            1080) params_ref[quality]+=" -maxrate $BITRATE_1080 -bufsize $((${BITRATE_1080%k} * 2))k" ;;
+            720) params_ref[quality]+=" -maxrate $BITRATE_720 -bufsize $((${BITRATE_720%k} * 2))k" ;;
+            576) params_ref[quality]+=" -maxrate $BITRATE_576 -bufsize $((${BITRATE_576%k} * 2))k" ;;
+            480) params_ref[quality]+=" -maxrate $BITRATE_480 -bufsize $((${BITRATE_480%k} * 2))k" ;;
+            *) params_ref[quality]+=" -maxrate $BITRATE_DEFAULT -bufsize $((${BITRATE_DEFAULT%k} * 2))k" ;;
+        esac
+    else
+        case "$res_num" in
+            1080) params_ref[quality]="-b:v $BITRATE_1080" ;;
+            720) params_ref[quality]="-b:v $BITRATE_720" ;;
+            576) params_ref[quality]="-b:v $BITRATE_576" ;;
+            480) params_ref[quality]="-b:v $BITRATE_480" ;;
+            *) params_ref[quality]="-b:v $BITRATE_DEFAULT" ;;
+        esac
+    fi
+
+    # Determine preset based on resolution
+    if [[ "$res_num" -le 576 ]]; then
+        params_ref[preset]="$PRESET_SD"
+    else
+        params_ref[preset]="$PRESET_HD"
+    fi
+}
+
+should_encode() {
+    local file="$1"
+    local size_gb="$2"
+    local resolution="$3"
+    local video_codec="$4"
+    local video_bitrate="$5"
+
+    local res_num="${resolution%[pi]}"
+
+    # Skip if already efficiently encoded with HEVC
+    if [[ "$SKIP_ALREADY_HEVC" == "true" ]] && [[ "$video_codec" == "hevc" ]] && [[ "$video_bitrate" != "0" ]] && (( video_bitrate < HEVC_BITRATE_THRESHOLD )); then
+        log_info "Skipping $file - already efficiently encoded with HEVC (${video_bitrate} bps)"
+        return 1
+    fi
+
+    # Always encode SD content for better compression if enabled
+    if [[ "$FORCE_ENCODE_SD" == "true" ]] && (( res_num <= 576 )); then
+        log_info "Will encode SD content ($resolution) for better compression"
+        return 0
+    fi
+    
+    # For HD content, use size threshold
+    if (( size_gb > REMUX_SIZE_GB )); then
+        log_info "Will encode large file (${size_gb}GB > ${REMUX_SIZE_GB}GB threshold)"
+        return 0
+    fi
+    
+    log_info "Will remux (${size_gb}GB <= ${REMUX_SIZE_GB}GB threshold)"
+    return 1
 }
 
 remux_file() {
@@ -93,26 +201,73 @@ encode_file() {
     local input_file="$1"
     local output_path="$2"
     local duration_sec="$3"
+    local resolution="$4"
 
-    log_info "Encoding $input_file"
+    declare -A encoding_params
+    get_encoding_params "$resolution" encoding_params
+
+    log_info "Encoding $input_file (${resolution}) with preset ${encoding_params[preset]}"
     local encode_log="$LOG_DIR/ffmpeg_encode_$(basename "$input_file").log"
 
-    if ! ffmpeg -hide_banner -loglevel error \
-        -hwaccel qsv -init_hw_device qsv=hw:/dev/dri/renderD128 -filter_hw_device hw \
-        -i "$input_file" -map 0 -sn \
-        -c:v "$VIDEO_CODEC" -preset "$VIDEO_PRESET" -b:v "$VIDEO_BITRATE" \
-        -c:a "$AUDIO_CODEC" \
-        -y "$output_path" > "$encode_log" 2>&1; then
+    # Build ffmpeg command with resolution-specific parameters
+    local ffmpeg_cmd=(
+        ffmpeg -hide_banner -loglevel error
+        -hwaccel qsv -init_hw_device qsv=hw:/dev/dri/renderD128 -filter_hw_device hw
+        -i "$input_file" -map 0 -sn
+        -c:v "$VIDEO_CODEC" -preset "${encoding_params[preset]}"
+    )
+
+    # Add quality parameters (either CRF or bitrate)
+    read -ra quality_params <<< "${encoding_params[quality]}"
+    ffmpeg_cmd+=("${quality_params[@]}")
+
+    # Add audio codec and output
+    ffmpeg_cmd+=(-c:a "$AUDIO_CODEC" -y "$output_path")
+
+    if ! "${ffmpeg_cmd[@]}" > "$encode_log" 2>&1; then
         log_error "Encoding failed for $input_file. Check logs at $encode_log"
         return 1
     fi
 
-    local actual_duration
-    actual_duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$output_path" | awk '{printf "%.0f\n", $1}')
-    if (( actual_duration < duration_sec * 80 / 100 )); then
-        log_warn "Encoded duration ($actual_duration) is much shorter than original ($duration_sec)!"
+    # Validate output duration
+    if ! validate_output "$input_file" "$output_path" "$duration_sec" "$resolution"; then
+        log_error "Output validation failed for $input_file"
         return 1
     fi
+
+    return 0
+}
+
+validate_output() {
+    local original="$1"
+    local encoded="$2"
+    local original_duration="$3"
+    local resolution="$4"
+
+    local encoded_duration
+    encoded_duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$encoded" | awk '{printf "%.0f\n", $1}')
+    
+    # More lenient duration check for SD content (often has timing irregularities)
+    local tolerance=80
+    local res_num="${resolution%[pi]}"
+    if (( res_num <= 576 )); then
+        tolerance=70
+    fi
+    
+    if (( encoded_duration < original_duration * tolerance / 100 )); then
+        log_warn "Encoded duration ($encoded_duration) is much shorter than original ($original_duration)!"
+        return 1
+    fi
+    
+    # Ensure some compression occurred (but allow for edge cases)
+    local encoded_size original_size
+    encoded_size=$(stat -f%z "$encoded" 2>/dev/null || stat -c%s "$encoded")
+    original_size=$(stat -f%z "$original" 2>/dev/null || stat -c%s "$original")
+    
+    if (( encoded_size >= original_size )); then
+        log_warn "Encoded file is not smaller than original - this may be expected for some content"
+    fi
+    
     return 0
 }
 
@@ -124,7 +279,7 @@ process_file() {
         return
     fi
 
-    echo "===================="
+    log_info "===================="
     echo "$file" > "$LOG_DIR/current.log"
 
     local relative_path="${file#${INPUT_DIR}/}"
@@ -149,15 +304,16 @@ process_file() {
     rm -f "$temp_output_path"
     mkdir -p "$output_dir"
 
-    log_info "Processing ${file} (${video_info[size_gb]}GB, ${video_info[res_label]})"
+    log_info "Processing ${file} (${video_info[size_gb]}GB, ${video_info[res_label]}, ${video_info[video_codec]}, ${video_info[video_bitrate]} bps)"
 
     local success=false
-    if (( video_info[size_gb] <= REMUX_SIZE_GB )); then
-        if remux_file "$file" "$temp_output_path"; then
+    
+    if should_encode "$file" "${video_info[size_gb]}" "${video_info[res_label]}" "${video_info[video_codec]}" "${video_info[video_bitrate]}"; then
+        if encode_file "$file" "$temp_output_path" "${video_info[duration]}" "${video_info[res_label]}"; then
             success=true
         fi
     else
-        if encode_file "$file" "$temp_output_path" "${video_info[duration]}"; then
+        if remux_file "$file" "$temp_output_path"; then
             success=true
         fi
     fi
@@ -195,6 +351,61 @@ process_file() {
     fi
 }
 
+process_files_sequential() {
+    local queue_file="$1"
+    
+    while IFS= read -r file; do
+        if [ -z "$file" ]; then
+            continue
+        fi
+        process_file "$file"
+    done < "$queue_file"
+}
+
+process_files_parallel() {
+    local queue_file="$1"
+    local -a pids=()
+    local job_count=0
+    
+    log_info "Processing files with up to $MAX_CONCURRENT_JOBS concurrent jobs"
+    
+    while IFS= read -r file; do
+        if [ -z "$file" ]; then continue; fi
+        
+        # Wait for a slot if we're at max capacity
+        while (( job_count >= MAX_CONCURRENT_JOBS )); do
+            # Check if any jobs have completed
+            local new_pids=()
+            for pid in "${pids[@]}"; do
+                if kill -0 "$pid" 2>/dev/null; then
+                    new_pids+=("$pid")
+                else
+                    ((job_count--))
+                fi
+            done
+            pids=("${new_pids[@]}")
+            
+            # Brief sleep to avoid busy waiting
+            if (( job_count >= MAX_CONCURRENT_JOBS )); then
+                sleep 1
+            fi
+        done
+        
+        # Start new job
+        process_file "$file" &
+        local new_pid=$!
+        pids+=("$new_pid")
+        ((job_count++))
+        
+    done < "$queue_file"
+    
+    # Wait for remaining jobs to complete
+    log_info "Waiting for remaining $job_count jobs to complete..."
+    for pid in "${pids[@]}"; do
+        wait "$pid" || true
+    done
+}
+
 main() {
     check_dependencies
 
@@ -207,19 +418,40 @@ main() {
 
     log_info "Recursively scanning $INPUT_DIR for .ts files..."
     find "$INPUT_DIR" -type f -name '*.ts' > "$queue_file"
-    log_info "Found $(wc -l < "$queue_file") files to process."
+    local total_files
+    total_files=$(wc -l < "$queue_file")
+    log_info "Found $total_files files to process."
 
-    mapfile -t file_list < "$queue_file"
+    if (( total_files == 0 )); then
+        log_info "No .ts files found to process."
+        return 0
+    fi
 
-    for file in "${file_list[@]}"; do
-        if [ -z "$file" ]; then
-            continue
-        fi
-        process_file "$file"
-    done
+    log_info "Configuration summary:"
+    log_info "- Parallel processing: $ENABLE_PARALLEL_PROCESSING"
+    if [[ "$ENABLE_PARALLEL_PROCESSING" == "true" ]]; then
+        log_info "- Max concurrent jobs: $MAX_CONCURRENT_JOBS"
+    fi
+    log_info "- Force encode SD content: $FORCE_ENCODE_SD"
+    log_info "- Use CRF mode: $USE_CRF"
+    log_info "- Skip already HEVC: $SKIP_ALREADY_HEVC"
+
+    # Process files based on parallel processing setting
+    if [[ "$ENABLE_PARALLEL_PROCESSING" == "true" ]] && (( MAX_CONCURRENT_JOBS > 1 )); then
+        process_files_parallel "$queue_file"
+    else
+        log_info "Processing files sequentially..."
+        process_files_sequential "$queue_file"
+    fi
 
     > "$LOG_DIR/current.log"
     log_info "All conversions complete."
+    
+    local done_count error_count
+    done_count=$(wc -l < "$LOG_DIR/done.log" 2>/dev/null || echo 0)
+    error_count=$(wc -l < "$LOG_DIR/error.log" 2>/dev/null || echo 0)
+    
+    ntfy_send "Batch complete: $done_count successful, $error_count failed out of $total_files total files"
 }
 
 main
