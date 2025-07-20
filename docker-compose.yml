@@ -1,0 +1,18 @@
+services:
+  ts-cleanup:
+    build: . # This tells Docker to build the Dockerfile in the current directory
+    container_name: ts-cleanup
+    devices:
+      - /dev/dri:/dev/dri
+    volumes:
+      - /mnt/hjem_nas_media/Movies:/input
+      - /mnt/hjem_nas_media/Movies-clean:/output
+      - /home/qsv/docker-compose/ts-to-mkv/service/cleanup.env:/service/cleanup.env
+      - /home/qsv/docker-compose/ts-to-mkv/service:/service
+    entrypoint: /service/cleanup.sh
+    environment:
+      - TZ=Europe/Luxembourg
+      - PUID=1000
+      - PGID=1000
+    restart: unless-stopped
+networks: {}
