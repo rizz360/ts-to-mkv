@@ -1,4 +1,4 @@
-# ts-cleanup 🧼📺
+# ts-to-mkv 🧼📺
 
 A smart, automated `.ts` cleaner and shrinker for Plex DVR recordings.
 
@@ -26,7 +26,7 @@ This Docker-based tool converts `.ts` files to smaller `.mkv` containers, keepin
 ## 🧾 File Structure
 
 ```
-ts-cleanup/
+ts-to-mkv/
 ├── docker-compose.yml
 ├── Dockerfile
 ├── service/
