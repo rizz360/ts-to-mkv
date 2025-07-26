@@ -2,6 +2,30 @@
 # Stricter error handling
 set -euo pipefail
 
+# Graceful shutdown handler
+shutdown_handler() {
+    log_info "Received shutdown signal. Cleaning up..."
+    
+    # Kill any background jobs
+    local jobs
+    jobs=$(jobs -p)
+    if [[ -n "$jobs" ]]; then
+        log_info "Terminating background jobs..."
+        kill $jobs 2>/dev/null || true
+        wait 2>/dev/null || true
+    fi
+    
+    # Clean up current processing indicator
+    > "$LOG_DIR/current.log" 2>/dev/null || true
+    
+    log_info "Shutdown complete."
+    ntfy_send "TS-to-MKV processor stopped"
+    exit 0
+}
+
+# Set up signal handlers for graceful shutdown
+trap shutdown_handler SIGTERM SIGINT SIGQUIT
+
 # --- Configuration & Setup ---
 if [ -f "/service/cleanup.env" ]; then
     source /service/cleanup.env
@@ -20,6 +44,10 @@ REMUX_SIZE_GB="${REMUX_SIZE_GB:-3}"
 VIDEO_CODEC="${VIDEO_CODEC:-hevc_qsv}"
 AUDIO_CODEC="${AUDIO_CODEC:-copy}"
 REMUX_FALLBACK_NO_SUBTITLES="${REMUX_FALLBACK_NO_SUBTITLES:-true}"
+
+# Processing mode settings
+MONITOR_MODE="${MONITOR_MODE:-watch}"
+POLL_INTERVAL="${POLL_INTERVAL:-300}"
 
 # Parallel processing settings
 ENABLE_PARALLEL_PROCESSING="${ENABLE_PARALLEL_PROCESSING:-false}"
@@ -428,25 +456,18 @@ process_files_parallel() {
     done
 }
 
-main() {
-    check_dependencies
-
-    ntfy_send "Getting started..."
-
-    mkdir -p "$LOG_DIR"
-    mkdir -p "$TEMP_DIR" # Ensure base temp directory exists
+process_existing_files() {
     local queue_file="$LOG_DIR/queue.log"
     >"$queue_file"
-    >"$LOG_DIR/current.log"
 
-    log_info "Recursively scanning $INPUT_DIR for .ts files..."
+    log_info "Scanning $INPUT_DIR for existing .ts files..."
     find "$INPUT_DIR" -type f -name '*.ts' > "$queue_file"
     local total_files
     total_files=$(wc -l < "$queue_file")
-    log_info "Found $total_files files to process."
+    log_info "Found $total_files existing files to process."
 
     if (( total_files == 0 )); then
-        log_info "No .ts files found to process."
+        log_info "No existing .ts files found to process."
         return 0
     fi
 
@@ -463,18 +484,140 @@ main() {
     if [[ "$ENABLE_PARALLEL_PROCESSING" == "true" ]] && (( MAX_CONCURRENT_JOBS > 1 )); then
         process_files_parallel "$queue_file"
     else
-        log_info "Processing files sequentially..."
+        log_info "Processing existing files sequentially..."
         process_files_sequential "$queue_file"
     fi
 
     > "$LOG_DIR/current.log"
-    log_info "All conversions complete."
+    log_info "Existing file processing complete."
     
     local done_count error_count
     done_count=$(wc -l < "$LOG_DIR/done.log" 2>/dev/null || echo 0)
     error_count=$(wc -l < "$LOG_DIR/error.log" 2>/dev/null || echo 0)
     
-    ntfy_send "Batch complete: $done_count successful, $error_count failed out of $total_files total files"
+    ntfy_send "Existing files processed: $done_count successful, $error_count failed out of $total_files total files"
+}
+
+wait_for_new_files() {
+    log_info "Starting file system monitoring for new .ts files in $INPUT_DIR"
+    log_info "Waiting for new files to be added..."
+    
+    while true; do
+        # Use inotifywait to monitor for new files
+        # Monitor for: moved_to (mv command), close_write (copy completion), create (new files)
+        local new_file
+        new_file=$(inotifywait -r -e moved_to,close_write,create --format '%w%f' "$INPUT_DIR" 2>/dev/null | grep '\.ts$' | head -n1)
+        
+        if [[ -n "$new_file" && -f "$new_file" ]]; then
+            log_info "Detected new file: $new_file"
+            
+            # Wait a moment to ensure file is completely written
+            sleep 5
+            
+            # Verify file still exists and process it
+            if [[ -f "$new_file" ]]; then
+                log_info "Processing newly detected file: $new_file"
+                process_file "$new_file"
+                
+                local done_count error_count
+                done_count=$(wc -l < "$LOG_DIR/done.log" 2>/dev/null || echo 0)
+                error_count=$(wc -l < "$LOG_DIR/error.log" 2>/dev/null || echo 0)
+                
+                log_info "File processing complete. Total processed: $done_count successful, $error_count failed"
+            else
+                log_warn "File disappeared before processing: $new_file"
+            fi
+        fi
+        
+        # Brief sleep to prevent excessive CPU usage in case inotifywait exits unexpectedly
+        sleep 1
+    done
+}
+
+poll_for_new_files() {
+    log_info "Starting periodic polling for new .ts files in $INPUT_DIR (every ${POLL_INTERVAL} seconds)"
+    
+    # Keep track of previously processed files
+    local processed_files_cache="$LOG_DIR/processed_cache.log"
+    touch "$processed_files_cache"
+    
+    while true; do
+        local queue_file="$LOG_DIR/poll_queue.log"
+        >"$queue_file"
+        
+        # Find all .ts files
+        find "$INPUT_DIR" -type f -name '*.ts' > "$queue_file"
+        
+        # Process only new files (not in our cache)
+        local new_files=0
+        while IFS= read -r file; do
+            if [[ -n "$file" ]] && ! grep -Fxq "$file" "$processed_files_cache"; then
+                log_info "Found new file to process: $file"
+                process_file "$file"
+                echo "$file" >> "$processed_files_cache"
+                ((new_files++))
+            fi
+        done < "$queue_file"
+        
+        if (( new_files > 0 )); then
+            local done_count error_count
+            done_count=$(wc -l < "$LOG_DIR/done.log" 2>/dev/null || echo 0)
+            error_count=$(wc -l < "$LOG_DIR/error.log" 2>/dev/null || echo 0)
+            
+            log_info "Processed $new_files new files. Total processed: $done_count successful, $error_count failed"
+        else
+            log_info "No new files found during this scan"
+        fi
+        
+        log_info "Waiting ${POLL_INTERVAL} seconds before next scan..."
+        sleep "$POLL_INTERVAL"
+    done
+}
+
+main() {
+    check_dependencies
+
+    # Validate monitor mode
+    case "$MONITOR_MODE" in
+        watch|poll|once)
+            log_info "Running in $MONITOR_MODE mode"
+            ;;
+        *)
+            log_error "Invalid MONITOR_MODE: $MONITOR_MODE. Must be 'watch', 'poll', or 'once'"
+            exit 1
+            ;;
+    esac
+
+    # Check dependencies based on monitor mode
+    if [[ "$MONITOR_MODE" == "watch" ]] && ! command -v inotifywait &> /dev/null; then
+        log_error "inotifywait not found. Please install inotify-tools package or use MONITOR_MODE=poll"
+        exit 1
+    fi
+
+    ntfy_send "TS-to-MKV processor starting in $MONITOR_MODE mode..."
+
+    mkdir -p "$LOG_DIR"
+    mkdir -p "$TEMP_DIR" # Ensure base temp directory exists
+    >"$LOG_DIR/current.log"
+
+    # Process any existing files first
+    process_existing_files
+    
+    # Handle different monitoring modes
+    case "$MONITOR_MODE" in
+        once)
+            log_info "Single run mode complete. Exiting."
+            ntfy_send "Single run processing complete."
+            ;;
+        watch)
+            ntfy_send "Now monitoring for new .ts files using file system events..."
+            wait_for_new_files
+            ;;
+        poll)
+            ntfy_send "Now monitoring for new .ts files using periodic polling (${POLL_INTERVAL}s intervals)..."
+            poll_for_new_files
+            ;;
+    esac
 }
 
 main

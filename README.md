@@ -8,7 +8,7 @@ This Docker-based tool converts `.ts` files to smaller `.mkv` containers, keepin
 
 ## ✅ Features
 
-- 🔁 **Recursively processes** all `.ts` files in `/input`
+- 🔁 **Continuously monitors** for new `.ts` files or runs once/periodically
 - 🗂 **Preserves subfolder structure** in `/output`
 - 🧠 Adds `.TV.720p.mkv`, `.TV.480i.mkv`, etc. suffixes based on resolution and scan type
 - ⚡ **Uses Intel QSV (Quick Sync Video)** hardware acceleration if available
@@ -27,7 +27,7 @@ This Docker-based tool converts `.ts` files to smaller `.mkv` containers, keepin
 
 ---
 
-## 🧾 File Structure
+## 🔎 Logs and Monitoring
 
 ```
 ts-to-mkv/
@@ -71,6 +71,10 @@ Edit `service/cleanup.env`:
 DELETE_TS=true                      # Delete .ts files after success
 REMUX_SIZE_GB=3                     # Files larger than this will be re-encoded (HD content only)
 REMUX_FALLBACK_NO_SUBTITLES=true    # Retry remux without subtitles if failed
+
+# --- Processing Mode ---
+MONITOR_MODE=watch                  # 'watch' for real-time monitoring, 'poll' for periodic, 'once' for single run
+POLL_INTERVAL=300                   # Seconds between scans when using poll mode (5 minutes)
 
 # --- Processing Settings ---
 ENABLE_PARALLEL_PROCESSING=false    # Enable parallel processing (true/false)
@@ -129,7 +133,38 @@ Example notification: `"movie.TV.1080i.mkv - Size reduced from 2500MB to 800MB (
 
 ---
 
-## 🔎 Logs and Monitoring
+## � Monitoring Modes
+
+The tool supports three different monitoring modes:
+
+### Watch Mode (Default - Recommended)
+```bash
+MONITOR_MODE=watch
+```
+- **Real-time file monitoring** using inotify events
+- **Immediate processing** when new `.ts` files are detected
+- **Most efficient** - no CPU overhead when idle
+- **Best for**: Active recording scenarios, minimal resource usage
+
+### Poll Mode
+```bash
+MONITOR_MODE=poll
+POLL_INTERVAL=300    # Check every 5 minutes
+```
+- **Periodic scanning** of the input directory
+- **Configurable interval** between scans
+- **Compatibility** - works on all file systems
+- **Best for**: Network storage, compatibility requirements
+
+### Once Mode
+```bash
+MONITOR_MODE=once
+```
+- **Single run** - processes existing files and exits
+- **Legacy behavior** - compatible with external scheduling
+- **Best for**: Cron jobs, manual processing
+
+---
 
 The tool automatically creates `service/logs/` directory with detailed logging:
 
@@ -236,6 +271,8 @@ REMUX_SIZE_GB=3         # Only affects HD content threshold
 
 ## 💡 Tips
 
+* **Continuous monitoring**: Default `watch` mode provides real-time processing of new files
+* **Smart file detection**: Handles various file operations (copy, move, create)
 * Uses `ffprobe` to automatically analyze resolution, codec, and content characteristics
 * Leaves all non-`.ts` files untouched
 * **Resolution-aware processing**: Different strategies for HD vs SD content
@@ -243,7 +280,7 @@ REMUX_SIZE_GB=3         # Only affects HD content threshold
 * **Quality assurance**: Validates encoded file duration with resolution-specific tolerances
 * **Hardware optimization**: Leverages Intel QSV for efficient H.265 encoding
 * **Smart skip**: Avoids re-processing files that are already efficiently encoded
-* Use a host `cron` to run this periodically, or wrap it in a `while true` loop with `sleep`
+* **Graceful shutdown**: Properly handles container stop signals and cleanup
 * Monitor progress with `tail -f service/logs/current.log` and size savings in notifications
 * For best results with SD content, enable `FORCE_ENCODE_SD=true` and consider `USE_CRF=true`
 
