@@ -42,6 +42,7 @@ OUTPUT_DIR="/output"
 DELETE_TS="${DELETE_TS:-false}"
 REMUX_SIZE_GB="${REMUX_SIZE_GB:-3}"
 VIDEO_CODEC="${VIDEO_CODEC:-hevc_qsv}"
+FALLBACK_CODEC="${FALLBACK_CODEC:-libx265}"
 AUDIO_CODEC="${AUDIO_CODEC:-copy}"
 REMUX_FALLBACK_NO_SUBTITLES="${REMUX_FALLBACK_NO_SUBTITLES:-true}"
 
@@ -241,13 +242,45 @@ encode_file() {
     log_info "Encoding $input_file (${resolution}) with preset ${encoding_params[preset]}"
     local encode_log="$LOG_DIR/ffmpeg_encode_$(basename "$input_file").log"
 
-    # Build ffmpeg command with resolution-specific parameters
-    local ffmpeg_cmd=(
-        ffmpeg -hide_banner -loglevel error
-        -hwaccel qsv -init_hw_device qsv=hw:/dev/dri/renderD128 -filter_hw_device hw
-        -i "$input_file" -map 0 -sn
-        -c:v "$VIDEO_CODEC" -preset "${encoding_params[preset]}"
-    )
+    # Try primary codec first
+    if try_encode_with_codec "$input_file" "$output_path" "$duration_sec" "$resolution" "$VIDEO_CODEC" "$encode_log"; then
+        return 0
+    fi
+
+    # If primary codec failed and it's a hardware codec, try fallback
+    if [[ "$VIDEO_CODEC" =~ qsv|nvenc|vaapi ]] && [[ "$FALLBACK_CODEC" != "$VIDEO_CODEC" ]]; then
+        log_warn "Hardware encoding failed for $input_file, trying fallback codec: $FALLBACK_CODEC"
+        rm -f "$output_path" # Clean up failed attempt
+        
+        if try_encode_with_codec "$input_file" "$output_path" "$duration_sec" "$resolution" "$FALLBACK_CODEC" "$encode_log"; then
+            return 0
+        fi
+    fi
+
+    log_error "All encoding attempts failed for $input_file. Check logs at $encode_log"
+    return 1
+}
+
+try_encode_with_codec() {
+    local input_file="$1"
+    local output_path="$2"
+    local duration_sec="$3"
+    local resolution="$4"
+    local codec="$5"
+    local encode_log="$6"
+
+    declare -A encoding_params
+    get_encoding_params "$resolution" encoding_params
+
+    # Build ffmpeg command based on codec type
+    local ffmpeg_cmd=(ffmpeg -hide_banner -loglevel error)
+    
+    # Add hardware acceleration for QSV
+    if [[ "$codec" == "hevc_qsv" ]]; then
+        ffmpeg_cmd+=(-hwaccel qsv -init_hw_device qsv=hw:/dev/dri/renderD128 -filter_hw_device hw)
+    fi
+    
+    ffmpeg_cmd+=(-i "$input_file" -map 0 -sn -c:v "$codec" -preset "${encoding_params[preset]}")
 
     # Add quality parameters (either CRF or bitrate)
     read -ra quality_params <<< "${encoding_params[quality]}"
@@ -256,17 +289,20 @@ encode_file() {
     # Add audio codec and output
     ffmpeg_cmd+=(-c:a "$AUDIO_CODEC" -y "$output_path")
 
+    log_info "Attempting encoding with $codec: ${ffmpeg_cmd[*]}"
+    
     if ! "${ffmpeg_cmd[@]}" > "$encode_log" 2>&1; then
-        log_error "Encoding failed for $input_file. Check logs at $encode_log"
+        log_warn "Encoding with $codec failed for $input_file"
         return 1
     fi
 
     # Validate output duration
     if ! validate_output "$input_file" "$output_path" "$duration_sec" "$resolution"; then
-        log_error "Output validation failed for $input_file"
+        log_error "Output validation failed for $input_file with $codec"
         return 1
     fi
 
+    log_info "Successfully encoded $input_file with $codec"
     return 0
 }
 
@@ -472,6 +508,8 @@ process_existing_files() {
     fi
 
     log_info "Configuration summary:"
+    log_info "- Primary video codec: $VIDEO_CODEC"
+    log_info "- Fallback video codec: $FALLBACK_CODEC"
     log_info "- Parallel processing: $ENABLE_PARALLEL_PROCESSING"
     if [[ "$ENABLE_PARALLEL_PROCESSING" == "true" ]]; then
         log_info "- Max concurrent jobs: $MAX_CONCURRENT_JOBS"

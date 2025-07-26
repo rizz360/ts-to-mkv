@@ -82,7 +82,8 @@ MAX_CONCURRENT_JOBS=2               # Number of concurrent encoding jobs
 FORCE_ENCODE_SD=true                # Always encode SD content (576p/i, 480p/i) for better compression
 
 # --- Encoding Settings ---
-VIDEO_CODEC=hevc_qsv                # Use Intel QSV hardware encoder
+VIDEO_CODEC=hevc_qsv                # Primary video codec (hevc_qsv, libx265, libx264)
+FALLBACK_CODEC=libx265              # Fallback codec if hardware encoding fails
 AUDIO_CODEC=copy                    # Copy all audio streams
 
 # --- Resolution-specific Bitrates ---
@@ -218,6 +219,13 @@ cat service/logs/done.log
 - **Sequential Processing**: Default, processes one file at a time
 - **Parallel Processing**: Optional, configurable concurrent jobs
 - **Hardware Acceleration**: Intel QSV for faster encoding
+- **Codec Fallback**: Automatic fallback to software encoding if hardware fails
+
+### Codec Compatibility
+- **Primary Codec**: Attempts hardware encoding first (hevc_qsv recommended)
+- **Fallback Codec**: Software encoding if hardware fails (libx265 recommended)
+- **Error Handling**: Automatic retry with different codec parameters
+- **Compatibility**: Works on systems with or without hardware acceleration
 
 ---
 
@@ -286,7 +294,47 @@ REMUX_SIZE_GB=3         # Only affects HD content threshold
 
 ---
 
-## 👋 Credits
+## � Troubleshooting
+
+### Hardware Encoding Issues
+
+If you see errors like:
+```
+[hevc_qsv @ 0x...] Low power mode is unsupported
+[hevc_qsv @ 0x...] Current frame rate is unsupported
+[hevc_qsv @ 0x...] some encoding parameters are not supported by the QSV runtime
+```
+
+**Solutions:**
+1. **Automatic Fallback**: The script will automatically retry with software encoding (`libx265`)
+2. **Manual Override**: Set `VIDEO_CODEC=libx265` to use software encoding exclusively
+3. **Alternative Codecs**: Try `VIDEO_CODEC=libx264` for broader compatibility
+
+### Common Hardware Encoding Problems:
+- **Unsupported frame rates**: Some unusual frame rates aren't supported by QSV
+- **Resolution limitations**: Very high or unusual resolutions may fail
+- **Driver issues**: Outdated Intel graphics drivers
+- **Container limitations**: `/dev/dri` device not properly mapped
+
+### Performance Tuning:
+```bash
+# For systems without hardware acceleration:
+VIDEO_CODEC=libx265
+FALLBACK_CODEC=libx264
+
+# For better compatibility with older hardware:
+VIDEO_CODEC=libx264
+FALLBACK_CODEC=libx264
+
+# For maximum quality (slower):
+USE_CRF=true
+PRESET_HD=slow
+PRESET_SD=slow
+```
+
+---
+
+## �👋 Credits
 
 Built with ❤️ by automation nerds and optimized for Plex DVR cleanup.
 
