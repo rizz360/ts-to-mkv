@@ -9,7 +9,7 @@ services:
       - /mnt/hjem_nas_media/Movies-clean:/output
       - /home/qsv/docker-compose/ts-to-mkv/service/cleanup.env:/service/cleanup.env
       - /home/qsv/docker-compose/ts-to-mkv/service:/service
-    entrypoint: /service/cleanup.sh
+    entrypoint: /service/cleanup_modular.sh
     environment:
       - TZ=Europe/Luxembourg
       - PUID=1000

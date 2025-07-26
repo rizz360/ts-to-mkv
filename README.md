@@ -2,12 +2,52 @@
 
 A smart, automated `.ts` cleaner and shrinker for Plex DVR recordings.
 
-This Docker-based tool converts `.ts` files to smaller `.mkv` containers, keeping **all audio/subtitle streams**, adding a `.TV.{resolution}.mkv` suffix, and optionally deleting the originals. Ideal for archival and cleanup tasks after long-term DVR usage.
+This Docker-based tool converts `.ts` files to smallerExample notification: `"movie.TV.1080i.mkv - Size reduced from 2500MB to 800MB (68% reduction)"`
+
+---
+
+## 🏗️ Modular Architecture
+
+The tool features a modular architecture that improves maintainability and extensibility:
+
+### Architecture Benefits
+- **Maintainable**: 7 focused modules (40-155 lines each) vs monolithic script
+- **Testable**: Individual components can be tested in isolation
+- **Extensible**: Easy to add new features without touching existing code
+- **Readable**: Clear separation of concerns and module boundaries
+
+### Migration Options
+The tool includes both architectures for flexibility:
+
+#### Option 1: Modular (Recommended)
+```yaml
+# docker-compose.yml
+entrypoint: /service/cleanup_modular.sh
+```
+
+#### Option 2: Legacy Monolithic  
+```yaml
+# docker-compose.yml  
+entrypoint: /service/cleanup.sh
+```
+
+### Migration Tools
+- `migrate_to_modular.sh` - Automated migration helper with validation
+- `test_modular.sh` - Comprehensive testing and validation
+- Full documentation in `MODULAR_ARCHITECTURE.md`
+- Docker-specific guide in `DOCKER_MIGRATION.md`
+
+Both versions offer identical functionality - choose based on your maintenance preferences.
+
+---
+
+## � Monitoring Modesv` containers, keeping **all audio/subtitle streams**, adding a `.TV.{resolution}.mkv` suffix, and optionally deleting the originals. Ideal for archival and cleanup tasks after long-term DVR usage.
 
 ---
 
 ## ✅ Features
 
+- 🧼 **Modular architecture** - Maintainable, testable design with focused modules
 - 🔁 **Continuously monitors** for new `.ts` files or runs once/periodically
 - 🗂 **Preserves subfolder structure** in `/output`
 - 🧠 Adds `.TV.720p.mkv`, `.TV.480i.mkv`, etc. suffixes based on resolution and scan type
@@ -35,8 +75,19 @@ ts-to-mkv/
 ├── Dockerfile
 ├── service/
 │   ├── cleanup.env
-│   ├── cleanup.sh
-│   └── logs/          # Created automatically at runtime
+│   ├── cleanup.sh              # Original monolithic script (preserved)
+│   ├── cleanup_modular.sh      # New modular main script
+│   ├── lib/                    # Modular architecture
+│   │   ├── system.sh           # System utilities
+│   │   ├── logging.sh          # Logging & notifications  
+│   │   ├── config.sh           # Configuration management
+│   │   ├── video_analysis.sh   # Video analysis
+│   │   ├── encoding.sh         # Encoding operations
+│   │   ├── file_processor.sh   # File processing
+│   │   └── file_monitor.sh     # File monitoring
+│   ├── migrate_to_modular.sh   # Migration helper
+│   ├── test_modular.sh         # Validation script
+│   └── logs/                   # Created automatically at runtime
 ```
 
 ---
@@ -116,6 +167,8 @@ NTFY_URL=http://192.168.1.119:1888/ts-to-mkv  # Optional: ntfy endpoint
 ```bash
 docker compose up --build
 ```
+
+**Note**: The default configuration now uses the modular architecture (`cleanup_modular.sh`). To use the legacy monolithic script, change the entrypoint in `docker-compose.yml` to `/service/cleanup.sh`.
 
 ---
 
@@ -279,6 +332,8 @@ REMUX_SIZE_GB=3         # Only affects HD content threshold
 
 ## 💡 Tips
 
+* **Modular architecture**: Use `cleanup_modular.sh` for easier maintenance and debugging
+* **Migration helper**: Run `migrate_to_modular.sh` for seamless transition validation
 * **Continuous monitoring**: Default `watch` mode provides real-time processing of new files
 * **Smart file detection**: Handles various file operations (copy, move, create)
 * Uses `ffprobe` to automatically analyze resolution, codec, and content characteristics
