@@ -5,14 +5,14 @@ services:
     devices:
       - /dev/dri:/dev/dri
     volumes:
-      - /mnt/hjem_nas_media/Movies:/input
-      - /mnt/hjem_nas_media/Movies-clean:/output
+      - /mnt/hjem_nas_dvr/Encode-Queue/:/input
+      - /mnt/hjem_nas_media/Movies:/output
       - /home/qsv/docker-compose/ts-to-mkv/service/cleanup.env:/service/cleanup.env
       - /home/qsv/docker-compose/ts-to-mkv/service:/service
-    entrypoint: /service/cleanup_modular.sh
+    entrypoint: /service/cleanup.sh
     environment:
       - TZ=Europe/Luxembourg
       - PUID=1000
       - PGID=1000
-    restart: unless-stopped
+    # restart: unless-stopped
 networks: {}
