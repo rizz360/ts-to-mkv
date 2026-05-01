@@ -24,7 +24,8 @@ ts-to-mkv/
 │   └── .env
 ├── tests/
 │   ├── test_modular.sh
-│   └── test_safety.sh
+│   ├── test_safety.sh
+│   └── test_smoke.sh
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   └── REFACTORING_SUMMARY.md

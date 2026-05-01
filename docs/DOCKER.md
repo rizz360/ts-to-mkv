@@ -5,7 +5,7 @@ Primary runtime flow is pulling the published GHCR image.
 
 ## Compose Requirements
 
-Use the following mount pattern in [docker-compose.yml](docker-compose.yml):
+Use the following mount pattern in [docker-compose.yml](../docker-compose.yml):
 
 ```yaml
 image: ghcr.io/rizz360/ts-to-mkv:latest
@@ -50,11 +50,13 @@ docker compose logs -f ts-to-mkv
 Expected startup message pattern:
 - `ts-to-mkv processor starting in [mode] mode...`
 
-## Validate in Container
+## Validate
+
+Run these checks from the repository root on the host (or in CI), not inside the runtime container. They validate repository files such as `docker-compose.yml`, `README.md`, and `docs/DOCKER.md`, which are not mounted by the compose setup shown above.
 
 ```bash
-docker compose exec ts-to-mkv bash /tests/test_safety.sh
-docker compose exec ts-to-mkv bash /tests/test_modular.sh
+bash tests/test_safety.sh
+bash tests/test_modular.sh
 ```
 
 ## Troubleshooting
@@ -71,4 +73,4 @@ docker compose exec ts-to-mkv bash -n /app/entrypoint.sh
 docker compose exec ts-to-mkv bash -c 'source /app/lib/config.sh && load_config && echo "$MONITOR_MODE"'
 ```
 
-If your storage backend does not propagate inotify events reliably, set `MONITOR_MODE=poll` in [config/.env](config/.env).
+If your storage backend does not propagate inotify events reliably, set `MONITOR_MODE=poll` in [config/.env](../config/.env).

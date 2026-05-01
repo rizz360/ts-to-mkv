@@ -8,6 +8,19 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 APP_DIR="$ROOT_DIR/app"
 LIB_DIR="$APP_DIR/lib"
 
+check_deps() {
+    local missing=()
+    for cmd in "$@"; do
+        command -v "$cmd" >/dev/null 2>&1 || missing+=("$cmd")
+    done
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        printf "[FAIL] Missing required tools: %s\n" "${missing[*]}"
+        exit 1
+    fi
+}
+
+check_deps rg bash
+
 pass() {
     printf "[PASS] %s\n" "$1"
 }

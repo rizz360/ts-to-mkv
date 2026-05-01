@@ -9,8 +9,8 @@ create_temp_job_dir() {
         safe_base="job"
     fi
 
-    mkdir -p "$TEMP_DIR"
-    mktemp -d "${TEMP_DIR%/}/${safe_base}.XXXXXX"
+    mkdir -p "$TEMP_DIR" || return 1
+    mktemp -d -- "${TEMP_DIR%/}/${safe_base}.XXXXXX"
 }
 
 process_file() {
