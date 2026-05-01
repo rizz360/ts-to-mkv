@@ -77,19 +77,9 @@ Important knobs:
 - `ENABLE_PARALLEL_PROCESSING`, `MAX_CONCURRENT_JOBS`
 - `FORCE_ENCODE_SD`, `SKIP_ALREADY_HEVC`
 
-## Validation
+## Contributing
 
-Run locally before pushing:
-
-```bash
-bash tests/test_safety.sh
-bash tests/test_modular.sh
-bash tests/test_smoke.sh
-# Optional local lint
-find app tests -type f -name '*.sh' -print0 | xargs -0 shellcheck -S error -e SC1091
-```
-
-CI will run shell lint, safety/modular tests, and Docker build verification.
+Contributor setup, local validation commands, commit conventions, and release flow are documented in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Logs
 
@@ -105,3 +95,4 @@ Runtime logs are written under [app/logs](app/logs):
 - [docs/DOCKER.md](docs/DOCKER.md)
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - [docs/REFACTORING_SUMMARY.md](docs/REFACTORING_SUMMARY.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md)
