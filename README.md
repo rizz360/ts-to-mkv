@@ -50,19 +50,27 @@ ts-to-mkv/
 ## Docker Setup
 
 1. Configure [docker-compose.yml](docker-compose.yml):
+   - image pull from GHCR (default)
    - input and output host mounts
-   - app and config mounts
+   - config mount
 2. Edit [config/.env](config/.env)
 3. Start:
 
 ```bash
-docker compose up --build
+docker compose pull
+docker compose up -d
 ```
 
 Entrypoint is modular-only:
 
 ```yaml
 entrypoint: /app/entrypoint.sh
+```
+
+Local build fallback (for development):
+
+```bash
+docker compose up --build
 ```
 
 ## Configuration
