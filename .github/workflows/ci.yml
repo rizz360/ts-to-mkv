@@ -25,7 +25,7 @@ jobs:
 
       - name: Run ShellCheck
         run: |
-          find service -type f -name '*.sh' -print0 | xargs -0 shellcheck -S error -e SC1091
+          find app tests -type f -name '*.sh' -print0 | xargs -0 shellcheck -S error -e SC1091
 
   shell-tests:
     name: Shell Safety and Modular Tests
@@ -42,10 +42,10 @@ jobs:
           sudo apt-get install -y ripgrep
 
       - name: Run safety checks
-        run: bash service/test_safety.sh
+        run: bash tests/test_safety.sh
 
       - name: Run modular checks
-        run: bash service/test_modular.sh
+        run: bash tests/test_modular.sh
 
   docker-build:
     name: Docker Build Verification

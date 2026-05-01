@@ -7,9 +7,10 @@ services:
     volumes:
       - /mnt/hjem_nas_dvr/Encode-Queue/:/input
       - /mnt/hjem_nas_media/Movies:/output
-      - /home/qsv/docker-compose/ts-to-mkv/service/cleanup.env:/service/cleanup.env
-      - /home/qsv/docker-compose/ts-to-mkv/service:/service
-    entrypoint: /service/cleanup_modular.sh
+      - ./config:/config:ro
+      - ./app:/app
+      - ./tests:/tests:ro
+    entrypoint: /app/entrypoint.sh
     environment:
       - TZ=Europe/Luxembourg
       - PUID=1000

@@ -5,7 +5,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-LIB_DIR="$SCRIPT_DIR/lib"
+APP_DIR="$ROOT_DIR/app"
+LIB_DIR="$APP_DIR/lib"
 
 pass() {
     printf "[PASS] %s\n" "$1"
@@ -37,7 +38,7 @@ assert_no_pattern() {
 echo "=== Safety Checks (Modular-Only) ==="
 
 # 1) Required runtime files
-assert_file_exists "$SCRIPT_DIR/cleanup_modular.sh"
+assert_file_exists "$APP_DIR/entrypoint.sh"
 assert_file_exists "$LIB_DIR/system.sh"
 assert_file_exists "$LIB_DIR/logging.sh"
 assert_file_exists "$LIB_DIR/config.sh"
@@ -49,34 +50,32 @@ assert_file_exists "$ROOT_DIR/docker-compose.yml"
 pass "Required modular files exist"
 
 # 2) Legacy artifacts must be gone
-assert_file_absent "$SCRIPT_DIR/cleanup.sh"
-assert_file_absent "$SCRIPT_DIR/cleanup.sh.backup"
-assert_file_absent "$SCRIPT_DIR/migrate_to_modular.sh"
+assert_file_absent "$ROOT_DIR/service"
 pass "Legacy files are removed"
 
 # 3) Runtime must point to modular entrypoint
-if ! rg -n "entrypoint:\s*/service/cleanup_modular\.sh" "$ROOT_DIR/docker-compose.yml" >/dev/null; then
+if ! rg -n "entrypoint:\s*/app/entrypoint\.sh" "$ROOT_DIR/docker-compose.yml" >/dev/null; then
     fail "docker-compose entrypoint is not modular"
 fi
-if rg -n "entrypoint:\s*/service/cleanup\.sh" "$ROOT_DIR/docker-compose.yml" >/dev/null; then
-    fail "docker-compose still references legacy entrypoint"
+if rg -n "entrypoint:\s*/service/" "$ROOT_DIR/docker-compose.yml" >/dev/null; then
+    fail "docker-compose still references old service paths"
 fi
 pass "Compose entrypoint is modular"
 
 # 4) Strict-mode shell footguns must not be present
-assert_no_pattern "grep '\\.ts\\$' \| head -n1" "$SCRIPT_DIR/cleanup_modular.sh $LIB_DIR"
-assert_no_pattern "\(\(new_files\+\+\)\)|\(\(job_count\+\+\)\)" "$SCRIPT_DIR/cleanup_modular.sh $LIB_DIR"
+assert_no_pattern "grep '\\.ts\\$' \| head -n1" "$APP_DIR/entrypoint.sh $LIB_DIR"
+assert_no_pattern "\(\(new_files\+\+\)\)|\(\(job_count\+\+\)\)" "$APP_DIR/entrypoint.sh $LIB_DIR"
 pass "Strict-mode footgun patterns not found"
 
 # 5) Syntax checks
-bash -n "$SCRIPT_DIR/cleanup_modular.sh"
+bash -n "$APP_DIR/entrypoint.sh"
 for file in "$LIB_DIR"/*.sh; do
     bash -n "$file"
 done
 pass "Bash syntax checks passed"
 
 # 6) Documentation must not present legacy as current option
-assert_no_pattern "entrypoint:\s*/service/cleanup\.sh" "$ROOT_DIR/README.md $ROOT_DIR/DOCKER_MIGRATION.md"
+assert_no_pattern "entrypoint:\s*/service/cleanup\.sh" "$ROOT_DIR/README.md $ROOT_DIR/docs/DOCKER.md"
 pass "Docs do not advertise legacy entrypoint"
 
 echo "=== Safety Checks Complete ==="
