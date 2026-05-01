@@ -1,6 +1,18 @@
 #!/bin/bash
 # File processing workflow
 
+create_temp_job_dir() {
+    local base_path="$1"
+    local safe_base="${base_path//\//_}"
+
+    if [[ -z "$safe_base" ]]; then
+        safe_base="job"
+    fi
+
+    mkdir -p "$TEMP_DIR" || return 1
+    mktemp -d -- "${TEMP_DIR%/}/${safe_base}.XXXXXX"
+}
+
 process_file() {
     local file="$1"
 
@@ -22,8 +34,18 @@ process_file() {
     local output_rel="${base_path}.${suffix}.mkv"
     local output_path="${OUTPUT_DIR}/${output_rel}"
 
-    # Use a dedicated temporary directory for processing
-    local temp_job_dir="${TEMP_DIR}/$(basename "${base_path}").$$"
+    if [[ -f "$output_path" ]]; then
+        log_info "Skipping, final file already exists: $file"
+        return
+    fi
+
+    # Use a unique temporary directory for each job to avoid collisions.
+    local temp_job_dir
+    if ! temp_job_dir="$(create_temp_job_dir "$base_path")"; then
+        log_error "Unable to create temporary job directory for $file"
+        echo "$file" >> "$LOG_DIR/error.log"
+        return 1
+    fi
     local temp_output_path="${temp_job_dir}/$(basename "$output_path")"
 
     # Cleanup function for the temporary directory
@@ -35,13 +57,7 @@ process_file() {
         fi
     }
 
-    if [[ -f "$output_path" ]]; then
-        log_info "Skipping, final file already exists: $file"
-        return
-    fi
-
     # Ensure temp and output directories exist
-    mkdir -p "$temp_job_dir"
     mkdir -p "$(dirname "$output_path")"
 
     log_info "Processing ${file} (${video_info[size_gb]}GB, ${video_info[res_label]}, ${video_info[video_codec]}, ${video_info[video_bitrate]} bps)"
