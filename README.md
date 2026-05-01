@@ -83,6 +83,7 @@ Run locally before pushing:
 ```bash
 bash tests/test_safety.sh
 bash tests/test_modular.sh
+bash tests/test_smoke.sh
 # Optional local lint
 find app tests -type f -name '*.sh' -print0 | xargs -0 shellcheck -S error -e SC1091
 ```

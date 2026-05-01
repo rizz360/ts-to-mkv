@@ -29,3 +29,4 @@ The entrypoint loads module files from `/app/lib` and coordinates startup, confi
 
 - [tests/test_safety.sh](../tests/test_safety.sh): structural and safety guardrails
 - [tests/test_modular.sh](../tests/test_modular.sh): module loading, function availability, syntax, safety invocation
+- [tests/test_smoke.sh](../tests/test_smoke.sh): lightweight integration flow for processing and output naming

@@ -4,7 +4,13 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
 
 permissions:
   contents: read
@@ -46,6 +52,9 @@ jobs:
 
       - name: Run modular checks
         run: bash tests/test_modular.sh
+
+      - name: Run smoke integration check
+        run: bash tests/test_smoke.sh
 
   docker-build:
     name: Docker Build Verification
