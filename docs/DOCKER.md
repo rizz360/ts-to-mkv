@@ -31,11 +31,13 @@ docker compose logs -f ts-to-mkv
 Expected startup message pattern:
 - `ts-to-mkv processor starting in [mode] mode...`
 
-## Validate in Container
+## Validate
+
+Run these checks from the repository root on the host (or in CI), not inside the runtime container. They validate repository files such as `docker-compose.yml`, `README.md`, and `docs/DOCKER.md`, which are not mounted by the compose setup shown above.
 
 ```bash
-docker compose exec ts-to-mkv bash /tests/test_safety.sh
-docker compose exec ts-to-mkv bash /tests/test_modular.sh
+bash tests/test_safety.sh
+bash tests/test_modular.sh
 ```
 
 ## Troubleshooting
