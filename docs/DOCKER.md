@@ -10,12 +10,15 @@ Use the following mount pattern in [docker-compose.yml](docker-compose.yml):
 ```yaml
 image: ghcr.io/rizz360/ts-to-mkv:latest
 pull_policy: always
+env_file:
+  - ./config/.env
 volumes:
   - /your/input/path:/input
   - /your/output/path:/output
-  - ./config:/config:ro
 entrypoint: /app/entrypoint.sh
 ```
+
+Use the compose environment block for deployment-specific overrides. Environment values override env_file values.
 
 ## Start
 
@@ -35,6 +38,8 @@ volumes:
   - ./app:/app
   - ./tests:/tests:ro
 ```
+
+If you prefer explicit file sourcing inside the container, set `TS_TO_MKV_CONFIG` to a mounted file path.
 
 ## Verify
 

@@ -10,7 +10,8 @@ services:
     volumes:
       - /mnt/hjem_nas_dvr/Encode-Queue/:/input
       - /mnt/hjem_nas_media/Movies:/output
-      - ./config:/config:ro
+    env_file:
+      - ./config/.env
     entrypoint: /app/entrypoint.sh
     environment:
       - TZ=Europe/Luxembourg

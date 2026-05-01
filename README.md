@@ -52,8 +52,8 @@ ts-to-mkv/
 1. Configure [docker-compose.yml](docker-compose.yml):
    - image pull from GHCR (default)
    - input and output host mounts
-   - config mount
-2. Edit [config/.env](config/.env)
+   - env_file: ./config/.env
+2. Edit [config/.env](config/.env) and optionally override values in compose environment
 3. Start:
 
 ```bash
@@ -75,7 +75,10 @@ docker compose up --build
 
 ## Configuration
 
-Main config file: [config/.env](config/.env)
+Primary runtime config source: [config/.env](config/.env) via compose env_file.
+
+Override any value per deployment in [docker-compose.yml](docker-compose.yml) under environment.
+Compose environment values take precedence over env_file values.
 
 Important knobs:
 - `MONITOR_MODE` (`watch`, `poll`, `once`)
