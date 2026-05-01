@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 APP_DIR="$ROOT_DIR/app"
 LIB_DIR="$APP_DIR/lib"
-CONFIG_FILE="$ROOT_DIR/config/cleanup.env"
+CONFIG_FILE="$ROOT_DIR/config/.env"
 
 echo "=== Testing Modular Architecture ==="
 

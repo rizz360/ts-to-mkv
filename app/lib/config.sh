@@ -7,7 +7,7 @@ load_config() {
     app_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
     # Allow override via TS_TO_MKV_CONFIG, otherwise use repo/container standard path.
-    CONFIG_FILE="${TS_TO_MKV_CONFIG:-${CONFIG_FILE:-$app_root/../config/cleanup.env}}"
+    CONFIG_FILE="${TS_TO_MKV_CONFIG:-${CONFIG_FILE:-$app_root/../config/.env}}"
 
     if [ -f "$CONFIG_FILE" ]; then
         source "$CONFIG_FILE"

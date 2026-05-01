@@ -21,7 +21,7 @@ ts-to-mkv/
 │   │   └── file_monitor.sh
 │   └── logs/                  # runtime logs (created automatically)
 ├── config/
-│   └── cleanup.env
+│   └── .env
 ├── tests/
 │   ├── test_modular.sh
 │   └── test_safety.sh
@@ -52,7 +52,7 @@ ts-to-mkv/
 1. Configure [docker-compose.yml](docker-compose.yml):
    - input and output host mounts
    - app and config mounts
-2. Edit [config/cleanup.env](config/cleanup.env)
+2. Edit [config/.env](config/.env)
 3. Start:
 
 ```bash
@@ -67,7 +67,7 @@ entrypoint: /app/entrypoint.sh
 
 ## Configuration
 
-Main config file: [config/cleanup.env](config/cleanup.env)
+Main config file: [config/.env](config/.env)
 
 Important knobs:
 - `MONITOR_MODE` (`watch`, `poll`, `once`)

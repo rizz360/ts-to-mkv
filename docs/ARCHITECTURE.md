@@ -18,7 +18,7 @@ The entrypoint loads module files from `/app/lib` and coordinates startup, confi
 
 ## Config and Paths
 
-- Config: `/config/cleanup.env` (default)
+- Config: `/config/.env` (default)
 - Input: `/input`
 - Output: `/output`
 - Logs: `/app/logs`

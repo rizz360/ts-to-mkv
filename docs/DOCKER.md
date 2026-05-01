@@ -52,4 +52,4 @@ docker compose exec ts-to-mkv bash -n /app/entrypoint.sh
 docker compose exec ts-to-mkv bash -c 'source /app/lib/config.sh && load_config && echo "$MONITOR_MODE"'
 ```
 
-If your storage backend does not propagate inotify events reliably, set `MONITOR_MODE=poll` in [config/cleanup.env](config/cleanup.env).
+If your storage backend does not propagate inotify events reliably, set `MONITOR_MODE=poll` in [config/.env](config/.env).
