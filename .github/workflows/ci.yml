@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+  pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+
+permissions:
+  contents: read
+
+jobs:
+  shell-lint:
+    name: Shell Lint (ShellCheck)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Run ShellCheck
+        run: |
+          find app tests -type f -name '*.sh' -print0 | xargs -0 shellcheck -S error -e SC1091
+
+  shell-tests:
+    name: Shell Safety and Modular Tests
+    runs-on: ubuntu-latest
+    needs: shell-lint
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure tools are available
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
+
+      - name: Run safety checks
+        run: bash tests/test_safety.sh
+
+      - name: Run modular checks
+        run: bash tests/test_modular.sh
+
+      - name: Run smoke integration check
+        run: bash tests/test_smoke.sh
+
+  docker-build:
+    name: Docker Build Verification
+    runs-on: ubuntu-latest
+    needs: shell-tests
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: ts-to-mkv:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

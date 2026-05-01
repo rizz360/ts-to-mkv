@@ -3,10 +3,16 @@
 
 # Load and validate configuration
 load_config() {
-    if [ -f "/service/cleanup.env" ]; then
-        source /service/cleanup.env
+    local app_root
+    app_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+    # Allow override via TS_TO_MKV_CONFIG, otherwise use repo/container standard path.
+    CONFIG_FILE="${TS_TO_MKV_CONFIG:-${CONFIG_FILE:-$app_root/../config/.env}}"
+
+    if [ -f "$CONFIG_FILE" ]; then
+        source "$CONFIG_FILE"
     else
-        printf "[%s] [ERROR] %s\n" "$(date +'%Y-%m-%d %H:%M:%S')" "Configuration file /service/cleanup.env not found. Exiting."
+        printf "[%s] [ERROR] %s\n" "$(date +'%Y-%m-%d %H:%M:%S')" "Configuration file $CONFIG_FILE not found. Exiting."
         exit 1
     fi
 
@@ -57,7 +63,7 @@ load_config() {
     CLEANUP_TEMP_ON_FAILURE="${CLEANUP_TEMP_ON_FAILURE:-true}"
 
     # Directory settings
-    LOG_DIR="/service/logs"
+    LOG_DIR="${LOG_DIR:-$app_root/logs}"
     INPUT_DIR="/input"
     OUTPUT_DIR="/output"
 }

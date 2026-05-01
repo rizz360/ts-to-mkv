@@ -17,7 +17,7 @@ log_error() {
 ntfy_send() {
     local message="$1"
     if [[ -n "${NTFY_URL:-}" ]]; then
-        curl -s -X POST -H "Title: TS-to-MKV" -H "Priority: default" \
+        curl -s -X POST -H "Title: ts-to-mkv" -H "Priority: default" \
             -d "$message" \
             "$NTFY_URL" > /dev/null || true
     fi

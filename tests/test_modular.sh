@@ -2,7 +2,10 @@
 # Test script for modular architecture validation
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LIB_DIR="$SCRIPT_DIR/lib"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+APP_DIR="$ROOT_DIR/app"
+LIB_DIR="$APP_DIR/lib"
+CONFIG_FILE="$ROOT_DIR/config/.env"
 
 echo "=== Testing Modular Architecture ==="
 
@@ -45,7 +48,7 @@ source "$LIB_DIR/logging.sh" 2>/dev/null || true
 source "$LIB_DIR/config.sh" 2>/dev/null || true
 
 # Mock the config file check for testing
-if [[ -f "$SCRIPT_DIR/cleanup.env" ]]; then
+if [[ -f "$CONFIG_FILE" ]]; then
     echo "✓ Configuration file exists"
 else
     echo "✗ Configuration file missing"
@@ -85,7 +88,7 @@ fi
 echo -e "\nTest 4: Syntax Validation"
 test_syntax() {
     local modules=(
-        "$SCRIPT_DIR/cleanup_modular.sh"
+        "$APP_DIR/entrypoint.sh"
         "$LIB_DIR/system.sh"
         "$LIB_DIR/logging.sh"
         "$LIB_DIR/config.sh"
@@ -111,10 +114,20 @@ if [[ $? -eq 0 ]]; then
     echo "✓ All modules have valid syntax"
 else
     echo "✗ Syntax validation failed"
+    exit 1
+fi
+
+# Test 5: Comprehensive safety checks
+echo -e "\nTest 5: Comprehensive Safety Checks"
+if bash "$SCRIPT_DIR/test_safety.sh"; then
+    echo "✓ Safety checks passed"
+else
+    echo "✗ Safety checks failed"
+    exit 1
 fi
 
 echo -e "\n=== Module Architecture Summary ==="
-echo "Main script: cleanup_modular.sh"
+echo "Main script: app/entrypoint.sh"
 echo "Modules:"
 for module in "$LIB_DIR"/*.sh; do
     if [[ -f "$module" ]]; then
@@ -131,16 +144,10 @@ for module in "$LIB_DIR"/*.sh; do
     fi
 done
 
-main_lines=$(wc -l < "$SCRIPT_DIR/cleanup_modular.sh")
+main_lines=$(wc -l < "$APP_DIR/entrypoint.sh")
 total_lines=$((total_lines + main_lines))
 
-echo "  - cleanup_modular.sh: $main_lines lines"
+echo "  - entrypoint.sh: $main_lines lines"
 echo "Total modular code: $total_lines lines"
-
-if [[ -f "$SCRIPT_DIR/cleanup.sh" ]]; then
-    original_lines=$(wc -l < "$SCRIPT_DIR/cleanup.sh")
-    echo "Original monolithic: $original_lines lines"
-    echo "Line difference: $((total_lines - original_lines)) lines"
-fi
 
 echo -e "\n=== Test Complete ==="
