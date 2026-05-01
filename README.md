@@ -31,6 +31,15 @@ entrypoint: /service/cleanup_modular.sh
 - Full architecture documentation in `service/MODULAR_ARCHITECTURE.md`
 - Docker operations guide in `DOCKER_MIGRATION.md`
 
+Run the full local check suite:
+
+```bash
+bash service/test_safety.sh
+bash service/test_modular.sh
+# Optional local lint (if shellcheck is installed)
+find service -type f -name '*.sh' -print0 | xargs -0 shellcheck -S error -e SC1091
+```
+
 ---
 
 ## 🔄 Monitoring Modes
