@@ -6,38 +6,27 @@ This Docker-based tool converts `.ts` files to smaller `.mkv` containers, keepin
 
 ---
 
-## 🏗️ Modular Architecture
+## 🏗️ Architecture
 
-The tool features a modular architecture that improves maintainability and extensibility:
+The project now runs on a single modular architecture.
 
 ### Architecture Benefits
-- **Maintainable**: 7 focused modules (40-155 lines each) vs monolithic script
-- **Testable**: Individual components can be tested in isolation
-- **Extensible**: Easy to add new features without touching existing code
+- **Maintainable**: 7 focused modules (40-160 lines each)
+- **Testable**: Individual components can be validated in isolation
+- **Extensible**: Add features without touching unrelated logic
 - **Readable**: Clear separation of concerns and module boundaries
 
-### Migration Options
-The tool includes both architectures for flexibility:
-
-#### Option 1: Modular (Recommended)
+### Runtime Entrypoint
 ```yaml
 # docker-compose.yml
 entrypoint: /service/cleanup_modular.sh
 ```
 
-#### Option 2: Legacy Monolithic  
-```yaml
-# docker-compose.yml  
-entrypoint: /service/cleanup.sh
-```
-
-### Migration Tools
-- `migrate_to_modular.sh` - Automated migration helper with validation
-- `test_modular.sh` - Comprehensive testing and validation
-- Full documentation in `MODULAR_ARCHITECTURE.md`
-- Docker-specific guide in `DOCKER_MIGRATION.md`
-
-Both versions offer identical functionality - choose based on your maintenance preferences.
+### Validation Tools
+- `test_modular.sh` - Modular architecture validation
+- `test_safety.sh` - Safety and regression guardrails
+- Full architecture documentation in `service/MODULAR_ARCHITECTURE.md`
+- Docker operations guide in `DOCKER_MIGRATION.md`
 
 ---
 
@@ -75,8 +64,7 @@ ts-to-mkv/
 ├── Dockerfile
 ├── service/
 │   ├── cleanup.env
-│   ├── cleanup.sh              # Original monolithic script (preserved)
-│   ├── cleanup_modular.sh      # New modular main script
+│   ├── cleanup_modular.sh      # Main script
 │   ├── lib/                    # Modular architecture
 │   │   ├── system.sh           # System utilities
 │   │   ├── logging.sh          # Logging & notifications  
@@ -85,8 +73,8 @@ ts-to-mkv/
 │   │   ├── encoding.sh         # Encoding operations
 │   │   ├── file_processor.sh   # File processing
 │   │   └── file_monitor.sh     # File monitoring
-│   ├── migrate_to_modular.sh   # Migration helper
 │   ├── test_modular.sh         # Validation script
+│   ├── test_safety.sh          # Safety checks
 │   └── logs/                   # Created automatically at runtime
 ```
 
@@ -168,7 +156,7 @@ NTFY_URL=http://192.168.1.119:1888/ts-to-mkv  # Optional: ntfy endpoint
 docker compose up --build
 ```
 
-**Note**: The current `docker-compose.yml` in this repository uses the legacy monolithic script (`cleanup.sh`) by default. To use the modular architecture, change the entrypoint to `/service/cleanup_modular.sh`.
+**Note**: The repository uses `cleanup_modular.sh` as the only supported runtime entrypoint.
 
 ---
 
@@ -215,7 +203,6 @@ POLL_INTERVAL=300    # Check every 5 minutes
 MONITOR_MODE=once
 ```
 - **Single run** - processes existing files and exits
-- **Legacy behavior** - compatible with external scheduling
 - **Best for**: Cron jobs, manual processing
 
 ---
@@ -333,7 +320,7 @@ REMUX_SIZE_GB=3         # Only affects HD content threshold
 ## 💡 Tips
 
 * **Modular architecture**: Use `cleanup_modular.sh` for easier maintenance and debugging
-* **Migration helper**: Run `migrate_to_modular.sh` for seamless transition validation
+* **Safety checks**: Run `test_modular.sh` and `test_safety.sh` before deploying changes
 * **Continuous monitoring**: Default `watch` mode provides real-time processing of new files
 * **Smart file detection**: Handles various file operations (copy, move, create)
 * Uses `ffprobe` to automatically analyze resolution, codec, and content characteristics

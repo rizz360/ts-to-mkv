@@ -1,186 +1,76 @@
-# Docker Migration Guide for Modular Architecture
+# Docker Runtime Guide (Modular-Only)
 
-This guide helps you migrate your Docker setup to use the new modular architecture.
+This project now runs a single supported runtime: modular architecture via `cleanup_modular.sh`.
 
 ## Quick Start
 
-### 1. Rebuild with the current default
-The current repository `docker-compose.yml` defaults to the legacy monolithic script. Rebuild your container:
-
 ```bash
-# Pull latest changes
 git pull origin main
-
-# Rebuild and restart
 docker compose down
 docker compose up --build
 ```
 
-The current `docker-compose.yml` uses `cleanup.sh` by default.
+The compose service should start with:
 
-### 2. Verify Migration
-Check that the container starts correctly:
+```yaml
+entrypoint: /service/cleanup_modular.sh
+```
+
+## Verify Startup
 
 ```bash
-# Check container logs
 docker compose logs -f ts-cleanup
-
-# You should see: "TS-to-MKV processor starting in [mode] mode..."
 ```
 
-## Manual Configuration Options
+Expected log pattern:
+- `TS-to-MKV processor starting in [mode] mode...`
 
-### Option 1: Use Modular Architecture
-```yaml
-# docker-compose.yml
-services:
-  ts-cleanup:
-    # ... other config ...
-    entrypoint: /service/cleanup_modular.sh
-```
-
-### Option 2: Use Legacy Monolithic Script (Current Default)
-```yaml
-# docker-compose.yml  
-services:
-  ts-cleanup:
-    # ... other config ...
-    entrypoint: /service/cleanup.sh
-```
-
-## Testing Inside Container
-
-### Test Modular Version
-```bash
-# Enter running container
-docker compose exec ts-cleanup bash
-
-# Run migration validation
-/service/migrate_to_modular.sh
-
-# Test modular script syntax
-/service/test_modular.sh
-
-# Exit container
-exit
-```
-
-### Compare Performance
-Both versions offer identical functionality:
-
-```bash
-# Test current setup
-docker compose exec ts-cleanup /service/cleanup_modular.sh --help 2>/dev/null || echo "Script runs normally"
-
-# Test legacy version  
-docker compose exec ts-cleanup /service/cleanup.sh --help 2>/dev/null || echo "Script runs normally"
-```
-
-## Volume Mounts
-
-No changes needed to volume mounts. Both architectures use the same paths:
+## Required Mounts
 
 ```yaml
 volumes:
   - /your/input/path:/input
-  - /your/output/path:/output  
-  - /your/config/path/service:/service  # Contains both cleanup.sh and cleanup_modular.sh
+  - /your/output/path:/output
+  - /your/config/path/service:/service
 ```
 
-## Configuration Compatibility
-
-### Unchanged
-- `cleanup.env` - No changes needed
-- Log files - Same location and format
-- Input/output directories - Same paths
-- Environment variables - All work identically
-
-### New Features Available
-With the modular architecture, you can now:
+## Validate Inside Container
 
 ```bash
-# Test individual modules
-docker compose exec ts-cleanup bash -c "source /service/lib/logging.sh && log_info 'Test message'"
-
-# Validate configuration
-docker compose exec ts-cleanup /service/lib/config.sh
-
-# Check specific functionality
-docker compose exec ts-cleanup bash -c "source /service/lib/video_analysis.sh && declare -f get_video_info"
+docker compose exec ts-cleanup bash
+/service/test_modular.sh
+/service/test_safety.sh
+exit
 ```
 
 ## Troubleshooting
 
-### Issue: Container won't start
-```bash
-# Check syntax of modular script
-docker compose exec ts-cleanup bash -n /service/cleanup_modular.sh
+### Container does not start
 
-# Fallback to legacy version
-# Edit docker-compose.yml: entrypoint: /service/cleanup.sh
-docker compose restart ts-cleanup
+```bash
+docker compose exec ts-cleanup bash -n /service/cleanup_modular.sh
 ```
 
-### Issue: Different behavior observed
+### Watch mode does not process new files
+
 ```bash
-# Compare configurations
-docker compose exec ts-cleanup bash -c "
-  echo '=== Modular Config Test ==='
+docker compose exec ts-cleanup bash -c 'source /service/lib/config.sh && load_config && echo "$MONITOR_MODE"'
+```
+
+If your storage backend does not emit inotify events reliably, set `MONITOR_MODE=poll` in `service/cleanup.env`.
+
+### Verify configuration load
+
+```bash
+docker compose exec ts-cleanup bash -c '
+  source /service/lib/logging.sh
   source /service/lib/config.sh
   load_config
   print_config_summary
-"
-
-# Check module loading
-docker compose exec ts-cleanup /service/test_modular.sh
+'
 ```
 
-### Issue: Performance concerns
-Both versions have identical performance. To verify:
+## Notes
 
-```bash
-# Time startup of each version
-time docker compose exec ts-cleanup /service/cleanup_modular.sh --version 2>/dev/null || true
-time docker compose exec ts-cleanup /service/cleanup.sh --version 2>/dev/null || true
-```
-
-## Rollback Procedure
-
-If you need to rollback to the legacy version:
-
-### Temporary Rollback
-```bash
-# Edit docker-compose.yml
-# Change: entrypoint: /service/cleanup_modular.sh
-# To:     entrypoint: /service/cleanup.sh
-
-docker compose restart ts-cleanup
-```
-
-### Permanent Rollback
-```bash
-# Use git to restore previous version
-git log --oneline | head -5  # Find commit before modular refactor
-git checkout <previous-commit-hash> -- service/
-docker compose restart ts-cleanup
-```
-
-## Benefits Summary
-
-### Modular Architecture Benefits
-- **Maintainability**: Easier to debug and modify
-- **Testability**: Individual components can be tested
-- **Extensibility**: Add features without touching existing code
-- **Documentation**: Better organized and documented
-
-### Docker-Specific Benefits
-- **Same container image**: No changes to Dockerfile needed
-- **Same dependencies**: All tools already installed
-- **Same performance**: Identical processing speed
-- **Same configuration**: No changes to cleanup.env needed
-
-## Conclusion
-
-The modular architecture provides significant development benefits while maintaining full compatibility with your existing Docker setup. Migration is as simple as pulling the latest changes and rebuilding your container.
-
-For production use, the modular version is recommended for its improved maintainability and extensibility.
+- There is no legacy runtime path in this repository anymore.
+- Safety checks are part of the standard validation flow through `test_safety.sh`.

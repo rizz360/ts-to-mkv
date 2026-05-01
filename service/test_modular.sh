@@ -111,43 +111,15 @@ if [[ $? -eq 0 ]]; then
     echo "✓ All modules have valid syntax"
 else
     echo "✗ Syntax validation failed"
+    exit 1
 fi
 
-# Test 5: Safety guardrails against strict-mode regressions
-echo -e "\nTest 5: Strict-Mode Safety Checks"
-test_safety_patterns() {
-    local files=(
-        "$SCRIPT_DIR/cleanup.sh"
-        "$LIB_DIR/file_processor.sh"
-        "$LIB_DIR/file_monitor.sh"
-    )
-
-    local failures=0
-    for file in "${files[@]}"; do
-        if grep -Eq "grep '\\.ts\$' \| head -n1" "$file"; then
-            echo "✗ Unsafe watch pipeline found in $file"
-            failures=1
-        fi
-
-        if grep -Eq "\(\(new_files\+\+\)\)|\(\(job_count\+\+\)\)" "$file"; then
-            echo "✗ Unsafe arithmetic increment found in $file"
-            failures=1
-        fi
-    done
-
-    if [[ "$failures" -eq 0 ]]; then
-        echo "✓ No known strict-mode footgun patterns found"
-        return 0
-    fi
-
-    return 1
-}
-
-test_safety_patterns
-if [[ $? -eq 0 ]]; then
-    echo "✓ Safety pattern checks passed"
+# Test 5: Comprehensive safety checks
+echo -e "\nTest 5: Comprehensive Safety Checks"
+if bash "$SCRIPT_DIR/test_safety.sh"; then
+    echo "✓ Safety checks passed"
 else
-    echo "✗ Safety pattern checks failed"
+    echo "✗ Safety checks failed"
     exit 1
 fi
 
@@ -174,11 +146,5 @@ total_lines=$((total_lines + main_lines))
 
 echo "  - cleanup_modular.sh: $main_lines lines"
 echo "Total modular code: $total_lines lines"
-
-if [[ -f "$SCRIPT_DIR/cleanup.sh" ]]; then
-    original_lines=$(wc -l < "$SCRIPT_DIR/cleanup.sh")
-    echo "Original monolithic: $original_lines lines"
-    echo "Line difference: $((total_lines - original_lines)) lines"
-fi
 
 echo -e "\n=== Test Complete ==="
