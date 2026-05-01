@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.1.0](https://github.com/rizz360/ts-to-mkv/compare/ts-to-mkv-v2.0.0...ts-to-mkv-v2.1.0) (2026-05-01)
+
+
+### Features
+
+* **docker:** default to GHCR pull + env_file config ([31c4f28](https://github.com/rizz360/ts-to-mkv/commit/31c4f281489783041637be09dc4d21482fd4126a))
+* Update configuration handling in Docker setup for improved clarity and flexibility ([20fab10](https://github.com/rizz360/ts-to-mkv/commit/20fab1087328f99a7b017192c439744a73d18f68))
+* Update Docker setup for improved image handling and local development support ([fbed0c1](https://github.com/rizz360/ts-to-mkv/commit/fbed0c10dd87cfc2b6e90a61255b5d35c9093c5a))
+
+
+### Bug Fixes
+
+* convert config/.env to Compose-compatible format and gate latest tag to stable releases ([21ad221](https://github.com/rizz360/ts-to-mkv/commit/21ad221630d0f5442a48858d3bfc5f71fb3fb079))
+
 ## [2.0.0](https://github.com/rizz360/ts-to-mkv/compare/ts-to-mkv-v1.2.0...ts-to-mkv-v2.0.0) (2026-05-01)
 
 
