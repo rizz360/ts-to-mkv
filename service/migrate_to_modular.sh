@@ -129,15 +129,15 @@ show_migration_instructions() {
     echo "2. TESTING:"
     echo "   - Test the modular version first:"
     if [[ "$DOCKER_MODE" == "true" ]]; then
-        echo "     docker-compose exec ts-to-mkv /service/cleanup_modular.sh"
+        echo "     docker compose exec ts-cleanup /service/cleanup_modular.sh"
     else
         echo "     ./cleanup_modular.sh"
     fi
     echo ""
     echo "3. DOCKER-COMPOSE UPDATE:"
-    echo "   - Update your docker-compose.yml command:"
-    echo "     OLD: command: [\"/service/cleanup.sh\"]"
-    echo "     NEW: command: [\"/service/cleanup_modular.sh\"]"
+    echo "   - Update your docker-compose.yml entrypoint:"
+    echo "     OLD: entrypoint: /service/cleanup.sh"
+    echo "     NEW: entrypoint: /service/cleanup_modular.sh"
     echo ""
     echo "4. CONFIGURATION:"
     echo "   - No changes needed to cleanup.env"

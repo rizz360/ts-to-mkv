@@ -2,10 +2,10 @@
 
 This guide helps you migrate your Docker setup to use the new modular architecture.
 
-## Quick Migration (Recommended)
+## Quick Start
 
-### 1. Update docker-compose.yml
-The repository now defaults to the modular architecture. Simply rebuild your container:
+### 1. Rebuild with the current default
+The current repository `docker-compose.yml` defaults to the legacy monolithic script. Rebuild your container:
 
 ```bash
 # Pull latest changes
@@ -16,7 +16,7 @@ docker compose down
 docker compose up --build
 ```
 
-The `docker-compose.yml` now uses `cleanup_modular.sh` by default.
+The current `docker-compose.yml` uses `cleanup.sh` by default.
 
 ### 2. Verify Migration
 Check that the container starts correctly:
@@ -30,7 +30,7 @@ docker compose logs -f ts-cleanup
 
 ## Manual Configuration Options
 
-### Option 1: Use Modular Architecture (Default)
+### Option 1: Use Modular Architecture
 ```yaml
 # docker-compose.yml
 services:
@@ -39,7 +39,7 @@ services:
     entrypoint: /service/cleanup_modular.sh
 ```
 
-### Option 2: Use Legacy Monolithic Script
+### Option 2: Use Legacy Monolithic Script (Current Default)
 ```yaml
 # docker-compose.yml  
 services:

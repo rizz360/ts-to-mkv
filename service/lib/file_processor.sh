@@ -86,10 +86,12 @@ process_file() {
             rm "$file"
             log_info "Deleted source file: $file"
         fi
+        return 0
     else
         log_error "Failed to process $file"
         echo "$file" >> "$LOG_DIR/error.log"
         cleanup "failure"
+        return 1
     fi
 }
 
@@ -128,7 +130,7 @@ process_files_parallel() {
                 if kill -0 "$pid" 2>/dev/null; then
                     new_pids+=("$pid")
                 else
-                    ((job_count--))
+                    job_count=$((job_count - 1))
                 fi
             done
             pids=("${new_pids[@]}")
@@ -143,7 +145,7 @@ process_files_parallel() {
         process_file "$file" &
         local new_pid=$!
         pids+=("$new_pid")
-        ((job_count++))
+        job_count=$((job_count + 1))
         
     done
     

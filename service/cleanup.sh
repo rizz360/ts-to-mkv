@@ -424,10 +424,12 @@ process_file() {
             rm "$file"
             log_info "Deleted source file: $file"
         fi
+        return 0
     else
         log_error "Failed to process $file"
         echo "$file" >> "$LOG_DIR/error.log"
         cleanup "failure"
+        return 1
     fi
 }
 
@@ -466,7 +468,7 @@ process_files_parallel() {
                 if kill -0 "$pid" 2>/dev/null; then
                     new_pids+=("$pid")
                 else
-                    ((job_count--))
+                    job_count=$((job_count - 1))
                 fi
             done
             pids=("${new_pids[@]}")
@@ -481,7 +483,7 @@ process_files_parallel() {
         process_file "$file" &
         local new_pid=$!
         pids+=("$new_pid")
-        ((job_count++))
+        job_count=$((job_count + 1))
         
     done
     
@@ -544,7 +546,7 @@ wait_for_new_files() {
         # Use inotifywait to monitor for new files
         # Monitor for: moved_to (mv command), close_write (copy completion), create (new files)
         local new_file
-        new_file=$(inotifywait -r -e moved_to,close_write,create --format '%w%f' "$INPUT_DIR" 2>/dev/null | grep '\.ts$' | head -n1)
+        new_file=$(inotifywait -r -e moved_to,close_write,create --format '%w%f' "$INPUT_DIR" 2>/dev/null | awk '/\.ts$/ { print; exit }')
         
         if [[ -n "$new_file" && -f "$new_file" ]]; then
             log_info "Detected new file: $new_file"
@@ -591,9 +593,12 @@ poll_for_new_files() {
         while IFS= read -r file; do
             if [[ -n "$file" ]] && ! grep -Fxq "$file" "$processed_files_cache"; then
                 log_info "Found new file to process: $file"
-                process_file "$file"
-                echo "$file" >> "$processed_files_cache"
-                ((new_files++))
+                if process_file "$file"; then
+                    echo "$file" >> "$processed_files_cache"
+                    new_files=$((new_files + 1))
+                else
+                    log_warn "Processing failed for $file; leaving it out of processed cache so it can be retried"
+                fi
             fi
         done < "$queue_file"
         

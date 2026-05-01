@@ -2,7 +2,7 @@
 
 A smart, automated `.ts` cleaner and shrinker for Plex DVR recordings.
 
-This Docker-based tool converts `.ts` files to smallerExample notification: `"movie.TV.1080i.mkv - Size reduced from 2500MB to 800MB (68% reduction)"`
+This Docker-based tool converts `.ts` files to smaller `.mkv` containers, keeping **all audio/subtitle streams**, adding a `.TV.{resolution}.mkv` suffix, and optionally deleting the originals. Ideal for archival and cleanup tasks after long-term DVR usage.
 
 ---
 
@@ -41,7 +41,7 @@ Both versions offer identical functionality - choose based on your maintenance p
 
 ---
 
-## � Monitoring Modesv` containers, keeping **all audio/subtitle streams**, adding a `.TV.{resolution}.mkv` suffix, and optionally deleting the originals. Ideal for archival and cleanup tasks after long-term DVR usage.
+## 🔄 Monitoring Modes
 
 ---
 
@@ -168,7 +168,7 @@ NTFY_URL=http://192.168.1.119:1888/ts-to-mkv  # Optional: ntfy endpoint
 docker compose up --build
 ```
 
-**Note**: The default configuration now uses the modular architecture (`cleanup_modular.sh`). To use the legacy monolithic script, change the entrypoint in `docker-compose.yml` to `/service/cleanup.sh`.
+**Note**: The current `docker-compose.yml` in this repository uses the legacy monolithic script (`cleanup.sh`) by default. To use the modular architecture, change the entrypoint to `/service/cleanup_modular.sh`.
 
 ---
 

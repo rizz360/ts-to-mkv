@@ -113,6 +113,44 @@ else
     echo "✗ Syntax validation failed"
 fi
 
+# Test 5: Safety guardrails against strict-mode regressions
+echo -e "\nTest 5: Strict-Mode Safety Checks"
+test_safety_patterns() {
+    local files=(
+        "$SCRIPT_DIR/cleanup.sh"
+        "$LIB_DIR/file_processor.sh"
+        "$LIB_DIR/file_monitor.sh"
+    )
+
+    local failures=0
+    for file in "${files[@]}"; do
+        if grep -Eq "grep '\\.ts\$' \| head -n1" "$file"; then
+            echo "✗ Unsafe watch pipeline found in $file"
+            failures=1
+        fi
+
+        if grep -Eq "\(\(new_files\+\+\)\)|\(\(job_count\+\+\)\)" "$file"; then
+            echo "✗ Unsafe arithmetic increment found in $file"
+            failures=1
+        fi
+    done
+
+    if [[ "$failures" -eq 0 ]]; then
+        echo "✓ No known strict-mode footgun patterns found"
+        return 0
+    fi
+
+    return 1
+}
+
+test_safety_patterns
+if [[ $? -eq 0 ]]; then
+    echo "✓ Safety pattern checks passed"
+else
+    echo "✗ Safety pattern checks failed"
+    exit 1
+fi
+
 echo -e "\n=== Module Architecture Summary ==="
 echo "Main script: cleanup_modular.sh"
 echo "Modules:"
