@@ -95,4 +95,26 @@ if [[ -f "$INPUT_DIR/sub/delete_me.ts" ]]; then
     exit 1
 fi
 
+# Case 3: Preserve deep show/season folder structure.
+mkdir -p "$INPUT_DIR/shows/Example Show/SEASON 01"
+printf "smoke-data-3" > "$INPUT_DIR/shows/Example Show/SEASON 01/Some Random Recording S01E02.ts"
+process_file "$INPUT_DIR/shows/Example Show/SEASON 01/Some Random Recording S01E02.ts"
+
+EXPECTED_OUTPUT_3="$OUTPUT_DIR/shows/Example Show/SEASON 01/Some Random Recording S01E02.TV.720p.mkv"
+if [[ ! -f "$EXPECTED_OUTPUT_3" ]]; then
+    echo "Smoke test failed: expected nested show output missing: $EXPECTED_OUTPUT_3"
+    exit 1
+fi
+
+# Case 4: Temp job directory generation must be unique for same basename in different paths.
+temp_a="$(create_temp_job_dir "shows/Series A/SEASON 01/Episode S01E01")"
+temp_b="$(create_temp_job_dir "shows/Series B/SEASON 01/Episode S01E01")"
+
+if [[ "$temp_a" == "$temp_b" ]]; then
+    echo "Smoke test failed: temp directories should be unique per job"
+    exit 1
+fi
+
+rm -rf "$temp_a" "$temp_b"
+
 echo "Smoke test passed"
