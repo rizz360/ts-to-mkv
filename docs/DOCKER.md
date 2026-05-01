@@ -1,26 +1,45 @@
 # Docker Runtime Guide
 
 This project uses a single modular runtime entrypoint.
+Primary runtime flow is pulling the published GHCR image.
 
 ## Compose Requirements
 
 Use the following mount pattern in [docker-compose.yml](../docker-compose.yml):
 
 ```yaml
+image: ghcr.io/rizz360/ts-to-mkv:latest
+pull_policy: always
+env_file:
+  - ./config/.env
 volumes:
   - /your/input/path:/input
   - /your/output/path:/output
-  - ./config:/config:ro
-  - ./app:/app
 entrypoint: /app/entrypoint.sh
 ```
+
+Use the compose environment block for deployment-specific overrides. Environment values override env_file values.
 
 ## Start
 
 ```bash
 docker compose down
-docker compose up --build
+docker compose pull
+docker compose up -d
 ```
+
+## Local Development Fallback
+
+If you are changing scripts locally and want live-mounted code, temporarily switch to local build mode:
+
+```yaml
+build: .
+volumes:
+  - ./app:/app
+  - ./tests:/tests:ro
+```
+
+If you prefer explicit file sourcing inside the container, set `TS_TO_MKV_CONFIG` to a mounted file path.
 
 ## Verify
 

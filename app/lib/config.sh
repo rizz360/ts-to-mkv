@@ -6,14 +6,16 @@ load_config() {
     local app_root
     app_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-    # Allow override via TS_TO_MKV_CONFIG, otherwise use repo/container standard path.
-    CONFIG_FILE="${TS_TO_MKV_CONFIG:-${CONFIG_FILE:-$app_root/../config/.env}}"
+    # Optional file-based config. Compose env/env_file is the primary runtime source.
+    CONFIG_FILE="${TS_TO_MKV_CONFIG:-${CONFIG_FILE:-}}"
 
-    if [ -f "$CONFIG_FILE" ]; then
-        source "$CONFIG_FILE"
-    else
-        printf "[%s] [ERROR] %s\n" "$(date +'%Y-%m-%d %H:%M:%S')" "Configuration file $CONFIG_FILE not found. Exiting."
-        exit 1
+    if [ -n "$CONFIG_FILE" ]; then
+        if [ -f "$CONFIG_FILE" ]; then
+            source "$CONFIG_FILE"
+        else
+            printf "[%s] [ERROR] %s\n" "$(date +'%Y-%m-%d %H:%M:%S')" "Configuration file $CONFIG_FILE not found. Exiting."
+            exit 1
+        fi
     fi
 
     # Set defaults for all configuration variables
