@@ -21,7 +21,7 @@ shutdown_handler() {
     > "$LOG_DIR/current.log" 2>/dev/null || true
     
     log_info "Shutdown complete."
-    ntfy_send "TS-to-MKV processor stopped"
+    ntfy_send "ts-to-mkv processor stopped"
     exit 0
 }
 

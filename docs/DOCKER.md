@@ -25,17 +25,17 @@ docker compose up --build
 ## Verify
 
 ```bash
-docker compose logs -f ts-cleanup
+docker compose logs -f ts-to-mkv
 ```
 
 Expected startup message pattern:
-- `TS-to-MKV processor starting in [mode] mode...`
+- `ts-to-mkv processor starting in [mode] mode...`
 
 ## Validate in Container
 
 ```bash
-docker compose exec ts-cleanup bash /tests/test_safety.sh
-docker compose exec ts-cleanup bash /tests/test_modular.sh
+docker compose exec ts-to-mkv bash /tests/test_safety.sh
+docker compose exec ts-to-mkv bash /tests/test_modular.sh
 ```
 
 ## Troubleshooting
@@ -43,13 +43,13 @@ docker compose exec ts-cleanup bash /tests/test_modular.sh
 ### Entrypoint syntax
 
 ```bash
-docker compose exec ts-cleanup bash -n /app/entrypoint.sh
+docker compose exec ts-to-mkv bash -n /app/entrypoint.sh
 ```
 
 ### Confirm active monitor mode
 
 ```bash
-docker compose exec ts-cleanup bash -c 'source /app/lib/config.sh && load_config && echo "$MONITOR_MODE"'
+docker compose exec ts-to-mkv bash -c 'source /app/lib/config.sh && load_config && echo "$MONITOR_MODE"'
 ```
 
 If your storage backend does not propagate inotify events reliably, set `MONITOR_MODE=poll` in [config/cleanup.env](config/cleanup.env).

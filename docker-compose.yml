@@ -1,7 +1,7 @@
 services:
-  ts-cleanup:
+  ts-to-mkv:
     build: . # This tells Docker to build the Dockerfile in the current directory
-    container_name: ts-cleanup
+    container_name: ts-to-mkv
     devices:
       - /dev/dri:/dev/dri
     volumes:
