@@ -8,14 +8,72 @@ services:
     devices:
       - /dev/dri:/dev/dri
     volumes:
-      - /mnt/hjem_nas_dvr/Encode-Queue/:/input
-      - /mnt/hjem_nas_media/Movies:/output
-    env_file:
-      - ./config/.env
+      - /mnt/input/ts-recordings:/input
+      - /mnt/output/mkv-library:/output
     entrypoint: /app/entrypoint.sh
     environment:
-      - TZ=Europe/Luxembourg
-      - PUID=1000
-      - PGID=1000
+      # --- Container Runtime ---
+      TZ: Europe/Luxembourg
+      PUID: 1000
+      PGID: 1000
+
+      # --- Optional External Config File ---
+      # Leave empty to use compose environment values only.
+      TS_TO_MKV_CONFIG: ""
+      CONFIG_FILE: ""
+
+      # --- File Handling ---
+      DELETE_TS: "true"
+      REMUX_SIZE_GB: "3"
+      REMUX_FALLBACK_NO_SUBTITLES: "true"
+
+      # --- Processing Mode ---
+      # Valid: watch | poll | once
+      MONITOR_MODE: watch
+      POLL_INTERVAL: "300"
+
+      # --- Processing Parallelism ---
+      ENABLE_PARALLEL_PROCESSING: "false"
+      MAX_CONCURRENT_JOBS: "2"
+
+      # --- Encoding Core ---
+      # Valid examples: hevc_qsv | libx265 | libx264
+      VIDEO_CODEC: hevc_qsv
+      FALLBACK_CODEC: libx265
+      AUDIO_CODEC: copy
+      FORCE_ENCODE_SD: "true"
+
+      # --- Bitrate Mode ---
+      BITRATE_1080: 4000k
+      BITRATE_720: 2500k
+      BITRATE_576: 1500k
+      BITRATE_480: 1200k
+      BITRATE_DEFAULT: 2000k
+
+      # --- CRF Mode ---
+      # Set USE_CRF=true to use CRF_* values instead of BITRATE_* values.
+      USE_CRF: "false"
+      CRF_1080: "23"
+      CRF_720: "24"
+      CRF_576: "26"
+      CRF_480: "28"
+      CRF_DEFAULT: "24"
+
+      # --- Resolution Presets ---
+      PRESET_HD: fast
+      PRESET_SD: medium
+
+      # --- HEVC Skip Logic ---
+      SKIP_ALREADY_HEVC: "true"
+      HEVC_BITRATE_THRESHOLD: "3000000"
+
+      # --- Notifications ---
+      # Example: http://ntfy.local:1888/ts-to-mkv
+      NTFY_URL: ""
+
+      # --- Temp and Logging Paths ---
+      TEMP_DIR: /tmp/ts-processing
+      CLEANUP_TEMP_ON_FAILURE: "true"
+      LOG_DIR: /app/logs
     # restart: unless-stopped
 networks: {}

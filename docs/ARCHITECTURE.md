@@ -18,12 +18,12 @@ The entrypoint loads module files from `/app/lib` and coordinates startup, confi
 
 ## Config and Paths
 
-- Config: `/config/.env` (default)
+- Config: compose `environment` block in `docker-compose.yml` (default)
 - Input: `/input`
 - Output: `/output`
 - Logs: `/app/logs`
 
-`config.sh` supports overriding config path via `TS_TO_MKV_CONFIG`.
+`config.sh` supports optional file-based config via `TS_TO_MKV_CONFIG` (or `CONFIG_FILE`).
 
 ## Test Layers
 

@@ -20,8 +20,7 @@ ts-to-mkv/
 │   │   ├── file_processor.sh
 │   │   └── file_monitor.sh
 │   └── logs/                  # runtime logs (created automatically)
-├── config/
-│   └── .env
+├── config/                  # optional external config file(s)
 ├── tests/
 │   ├── test_modular.sh
 │   ├── test_safety.sh
@@ -53,8 +52,8 @@ ts-to-mkv/
 1. Configure [docker-compose.yml](docker-compose.yml):
    - image pull from GHCR (default)
    - input and output host mounts
-   - env_file: ./config/.env
-2. Edit [config/.env](config/.env) and optionally override values in compose environment
+   - environment defaults grouped by category
+2. Adjust environment values directly in [docker-compose.yml](docker-compose.yml)
 3. Start:
 
 ```bash
@@ -76,10 +75,9 @@ docker compose up --build
 
 ## Configuration
 
-Primary runtime config source: [config/.env](config/.env) via compose env_file.
+Primary runtime config source: [docker-compose.yml](docker-compose.yml) under `environment`.
 
-Override any value per deployment in [docker-compose.yml](docker-compose.yml) under environment.
-Compose environment values take precedence over env_file values.
+Optional: mount and set `TS_TO_MKV_CONFIG` (or `CONFIG_FILE`) if you still want file-based config.
 
 Important knobs:
 - `MONITOR_MODE` (`watch`, `poll`, `once`)
