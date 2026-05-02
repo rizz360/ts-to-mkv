@@ -30,16 +30,34 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Detect release type
+        id: release-type
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ "$TAG" == ts-to-mkv-v* ]]; then
+            VERSION="${TAG#ts-to-mkv-v}"
+          elif [[ "$TAG" == v* ]]; then
+            VERSION="${TAG#v}"
+          else
+            VERSION=""
+          fi
+          if [[ -z "$VERSION" ]] || [[ "$VERSION" == *-* ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Extract image metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
+            type=ref,event=tag
             type=match,pattern=ts-to-mkv-v(.*),group=1
             type=match,pattern=v(.*),group=1
             type=sha,prefix=sha-
-            type=raw,value=latest,enable=${{ startsWith(github.ref_name, 'ts-to-mkv-v') || startsWith(github.ref_name, 'v') }}
+            type=raw,value=latest,enable=${{ steps.release-type.outputs.is_prerelease == 'false' }}
 
       - name: Build and push image
         uses: docker/build-push-action@v6
