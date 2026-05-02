@@ -66,3 +66,9 @@ Runtime logs are written under [app/logs](app/logs):
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - [docs/REFACTORING_SUMMARY.md](docs/REFACTORING_SUMMARY.md)
 - [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## Community
+
+- [SECURITY.md](SECURITY.md)
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- [SUPPORT.md](SUPPORT.md)
