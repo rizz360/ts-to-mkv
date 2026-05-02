@@ -47,11 +47,11 @@ source "$LIB_DIR/system.sh" 2>/dev/null || true
 source "$LIB_DIR/logging.sh" 2>/dev/null || true
 source "$LIB_DIR/config.sh" 2>/dev/null || true
 
-# Mock the config file check for testing
+# File-based config is optional; compose environment is the primary runtime source.
 if [[ -f "$CONFIG_FILE" ]]; then
-    echo "✓ Configuration file exists"
+    echo "✓ Optional file-based configuration exists"
 else
-    echo "✗ Configuration file missing"
+    echo "ℹ Optional file-based configuration not present (expected for env-first setup)"
 fi
 
 # Test 3: Function availability
