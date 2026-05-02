@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.2.0](https://github.com/rizz360/ts-to-mkv/compare/ts-to-mkv-v2.1.0...ts-to-mkv-v2.2.0) (2026-05-02)
+
+
+### Features
+
+* add initial .env configuration for encoding settings and processing options ([2d3e714](https://github.com/rizz360/ts-to-mkv/commit/2d3e714595546fc5e318cf10eb26b3c51187e3be))
+
+
+### Bug Fixes
+
+* address review feedback on config path, compose vars, and doc placeholders ([2ba648a](https://github.com/rizz360/ts-to-mkv/commit/2ba648a7edeeccff66a41be4002940bef1eb5273))
+
 ## [2.1.0](https://github.com/rizz360/ts-to-mkv/compare/ts-to-mkv-v2.0.0...ts-to-mkv-v2.1.0) (2026-05-01)
 
 
