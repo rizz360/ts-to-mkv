@@ -3,38 +3,7 @@
 [![CI](https://github.com/rizz360/ts-to-mkv/actions/workflows/ci.yml/badge.svg)](https://github.com/rizz360/ts-to-mkv/actions/workflows/ci.yml)
 [![Release](https://github.com/rizz360/ts-to-mkv/actions/workflows/release.yml/badge.svg)](https://github.com/rizz360/ts-to-mkv/actions/workflows/release.yml)
 
-A modular Docker-based tool that converts `.ts` recordings to `.mkv`, preserves folder structure, and applies smart remux/encode decisions with hardware fallback.
-
-## Project Layout
-
-```text
-ts-to-mkv/
-├── app/
-│   ├── entrypoint.sh
-│   ├── lib/
-│   │   ├── system.sh
-│   │   ├── logging.sh
-│   │   ├── config.sh
-│   │   ├── video_analysis.sh
-│   │   ├── encoding.sh
-│   │   ├── file_processor.sh
-│   │   └── file_monitor.sh
-│   └── logs/                  # runtime logs (created automatically)
-├── config/                  # optional external config file(s)
-├── tests/
-│   ├── test_modular.sh
-│   ├── test_safety.sh
-│   └── test_smoke.sh
-├── docs/
-│   ├── ARCHITECTURE.md
-│   └── REFACTORING_SUMMARY.md
-├── .github/workflows/
-│   ├── ci.yml
-│   └── release.yml
-├── docker-compose.yml
-├── Dockerfile
-└── docs/DOCKER.md
-```
+A Docker-based tool that converts `.ts` recordings to `.mkv`, preserves folder structure, and applies smart remux/encode decisions with hardware fallback.
 
 ## Features
 
@@ -59,18 +28,6 @@ ts-to-mkv/
 ```bash
 docker compose pull
 docker compose up -d
-```
-
-Entrypoint is modular-only:
-
-```yaml
-entrypoint: /app/entrypoint.sh
-```
-
-Local build fallback (for development):
-
-```bash
-docker compose up --build
 ```
 
 ## Configuration
