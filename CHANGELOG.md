@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.2](https://github.com/rizz360/ts-to-mkv/compare/ts-to-mkv-v2.2.1...ts-to-mkv-v2.2.2) (2026-05-02)
+
+
+### Bug Fixes
+
+* Improve ntfy webhook handling with conservative curl timeouts ([d744fa1](https://github.com/rizz360/ts-to-mkv/commit/d744fa13042c08bd6c1d194278d1f38513968446))
+* **logging:** bound ntfy webhook call time ([ff565ee](https://github.com/rizz360/ts-to-mkv/commit/ff565eeda4fd1b20a7323b0b95e9bb821afd8c48))
+
 ## [2.2.1](https://github.com/rizz360/ts-to-mkv/compare/ts-to-mkv-v2.2.0...ts-to-mkv-v2.2.1) (2026-05-02)
 
 
