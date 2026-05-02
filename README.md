@@ -43,6 +43,10 @@ Important knobs:
 - `ENABLE_PARALLEL_PROCESSING`, `MAX_CONCURRENT_JOBS`
 - `FORCE_ENCODE_SD`, `SKIP_ALREADY_HEVC`
 
+Filename support note:
+- Paths with spaces, quotes, and UTF-8 characters are supported.
+- Paths containing literal newline characters are not supported.
+
 ## Contributing
 
 Contributor setup, local validation commands, commit conventions, and release flow are documented in [CONTRIBUTING.md](CONTRIBUTING.md).

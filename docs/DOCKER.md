@@ -49,6 +49,11 @@ docker compose logs -f ts-to-mkv
 Expected startup message pattern:
 - `ts-to-mkv processor starting in [mode] mode...`
 
+## Filename Support
+
+- Paths with spaces, quotes, and UTF-8 characters are supported.
+- Paths containing literal newline characters are not supported.
+
 ## Validate
 
 Run these checks from the repository root on the host (or in CI), not inside the runtime container. They validate repository files such as `docker-compose.yml`, `README.md`, and `docs/DOCKER.md`, which are not mounted by the compose setup shown above.
