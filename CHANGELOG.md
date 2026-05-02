@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.3](https://github.com/rizz360/ts-to-mkv/compare/ts-to-mkv-v2.2.2...ts-to-mkv-v2.2.3) (2026-05-02)
+
+
+### Bug Fixes
+
+* **ci:** prevent malformed ghcr tag in release publish ([0691094](https://github.com/rizz360/ts-to-mkv/commit/06910940ab60c9ac7d9d9de02112a1bb44617dca))
+* **ci:** prevent malformed ghcr tag in release publish ([7a97225](https://github.com/rizz360/ts-to-mkv/commit/7a972254239637aefb98d2aeae6fd08c36681b14))
+
 ## [2.2.2](https://github.com/rizz360/ts-to-mkv/compare/ts-to-mkv-v2.2.1...ts-to-mkv-v2.2.2) (2026-05-02)
 
 
