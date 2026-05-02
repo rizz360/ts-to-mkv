@@ -5,7 +5,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 APP_DIR="$ROOT_DIR/app"
 LIB_DIR="$APP_DIR/lib"
-CONFIG_FILE="$ROOT_DIR/config/.env"
 
 echo "=== Testing Modular Architecture ==="
 
@@ -48,11 +47,16 @@ source "$LIB_DIR/logging.sh" 2>/dev/null || true
 source "$LIB_DIR/config.sh" 2>/dev/null || true
 
 # File-based config is optional; compose environment is the primary runtime source.
-if [[ -f "$CONFIG_FILE" ]]; then
-    echo "✓ Optional file-based configuration exists"
+# TS_TO_MKV_CONFIG takes precedence over CONFIG_FILE (mirrors config.sh logic).
+_config_path="${TS_TO_MKV_CONFIG:-${CONFIG_FILE:-}}"
+if [[ -n "$_config_path" && -f "$_config_path" ]]; then
+    echo "✓ Optional file-based configuration exists at $_config_path"
+elif [[ -n "$_config_path" ]]; then
+    echo "ℹ Optional file-based configuration set but not found: $_config_path"
 else
-    echo "ℹ Optional file-based configuration not present (expected for env-first setup)"
+    echo "ℹ No file-based configuration set (env-first setup)"
 fi
+unset _config_path
 
 # Test 3: Function availability
 echo -e "\nTest 3: Core Functions Available"

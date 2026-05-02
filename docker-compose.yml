@@ -18,9 +18,9 @@ services:
       PGID: 1000
 
       # --- Optional External Config File ---
-      # Leave empty to use compose environment values only.
+      # TS_TO_MKV_CONFIG takes precedence; set it to a mounted file path to override compose values.
+      # Leave empty (or unset) to use compose environment values only.
       TS_TO_MKV_CONFIG: ""
-      CONFIG_FILE: ""
 
       # --- File Handling ---
       # Delete .ts files after success

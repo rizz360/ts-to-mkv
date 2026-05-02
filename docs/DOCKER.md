@@ -11,8 +11,8 @@ Use the following mount pattern in [docker-compose.yml](../docker-compose.yml):
 image: ghcr.io/rizz360/ts-to-mkv:latest
 pull_policy: always
 volumes:
-  - /mnt/input/ts-recordings:/input
-  - /mnt/output/mkv-library:/output
+  - /your/input/path:/input
+  - /your/output/path:/output
 entrypoint: /app/entrypoint.sh
 ```
 
