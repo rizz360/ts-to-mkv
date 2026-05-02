@@ -114,7 +114,7 @@ process_file() {
 process_files_sequential() {
     local -a file_list
     
-    # Use mapfile to properly handle filenames with special characters
+    # Read newline-delimited queue entries safely (spaces/UTF-8 are supported; newlines are not).
     mapfile -t file_list < "$1"
     
     for file in "${file_list[@]}"; do
@@ -130,7 +130,7 @@ process_files_parallel() {
     local -a pids=()
     local job_count=0
     
-    # Use mapfile to properly handle filenames with special characters
+    # Read newline-delimited queue entries safely (spaces/UTF-8 are supported; newlines are not).
     mapfile -t file_list < "$1"
     
     log_info "Processing files with up to $MAX_CONCURRENT_JOBS concurrent jobs"

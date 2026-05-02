@@ -10,15 +10,14 @@ Use the following mount pattern in [docker-compose.yml](../docker-compose.yml):
 ```yaml
 image: ghcr.io/rizz360/ts-to-mkv:latest
 pull_policy: always
-env_file:
-  - ./config/.env
 volumes:
   - /your/input/path:/input
   - /your/output/path:/output
 entrypoint: /app/entrypoint.sh
 ```
 
-Use the compose environment block for deployment-specific overrides. Environment values override env_file values.
+Use the compose `environment` block as the primary runtime config source.
+All supported variables with defaults are listed directly in `docker-compose.yml`.
 
 ## Start
 
@@ -50,6 +49,11 @@ docker compose logs -f ts-to-mkv
 Expected startup message pattern:
 - `ts-to-mkv processor starting in [mode] mode...`
 
+## Filename Support
+
+- Paths with spaces, quotes, and UTF-8 characters are supported.
+- Paths containing literal newline characters are not supported.
+
 ## Validate
 
 Run these checks from the repository root on the host (or in CI), not inside the runtime container. They validate repository files such as `docker-compose.yml`, `README.md`, and `docs/DOCKER.md`, which are not mounted by the compose setup shown above.
@@ -73,4 +77,4 @@ docker compose exec ts-to-mkv bash -n /app/entrypoint.sh
 docker compose exec ts-to-mkv bash -c 'source /app/lib/config.sh && load_config && echo "$MONITOR_MODE"'
 ```
 
-If your storage backend does not propagate inotify events reliably, set `MONITOR_MODE=poll` in [config/.env](../config/.env).
+If your storage backend does not propagate inotify events reliably, set `MONITOR_MODE=poll` in [docker-compose.yml](../docker-compose.yml).

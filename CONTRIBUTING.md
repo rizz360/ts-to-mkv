@@ -22,6 +22,8 @@ bash tests/test_smoke.sh
 find app tests -type f -name '*.sh' -print0 | xargs -0 shellcheck -S error -e SC1091
 ```
 
+Note: `tests/test_smoke.sh` requires Bash 4+ (CI uses Ubuntu Bash). The default macOS Bash 3.2 will skip this test.
+
 ## CI Expectations
 
 CI runs:
