@@ -86,6 +86,7 @@ jobs:
           else
             VERSION=""
           fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           if [[ -z "$VERSION" ]] || [[ "$VERSION" == *-* ]]; then
             echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
           else
@@ -98,9 +99,7 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=ref,event=tag
-            type=match,pattern=ts-to-mkv-v(.*),group=1,value=${{ steps.release-tag.outputs.tag }}
-            type=match,pattern=v(.*),group=1,value=${{ steps.release-tag.outputs.tag }}
+            type=raw,value=${{ steps.release-type.outputs.version }}
             type=sha,prefix=sha-
             type=raw,value=latest,enable=${{ steps.release-type.outputs.is_prerelease == 'false' }}
 
