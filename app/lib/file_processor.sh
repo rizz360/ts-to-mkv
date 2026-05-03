@@ -13,6 +13,56 @@ create_temp_job_dir() {
     mktemp -d -- "${TEMP_DIR%/}/${safe_base}.XXXXXX"
 }
 
+get_duration_seconds() {
+    local media_file="$1"
+    ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$media_file" \
+        | awk '{printf "%.0f\n", $1}'
+}
+
+delete_source_if_output_verified() {
+    local source_file="$1"
+    local expected_output="$2"
+    local reason="$3"
+
+    if [[ ! -f "$expected_output" ]]; then
+        log_warn "Not deleting source ($reason): expected output missing at $expected_output"
+        return 1
+    fi
+
+    if [[ ! -s "$expected_output" ]]; then
+        log_warn "Not deleting source ($reason): expected output is empty at $expected_output"
+        return 1
+    fi
+
+    if [[ "$reason" == "skip-existing-output" ]] && [[ "$DELETE_SKIPPED_VERIFY_DURATION" == "true" ]]; then
+        local source_duration output_duration delta delta_pct
+        source_duration="$(get_duration_seconds "$source_file" 2>/dev/null || true)"
+        output_duration="$(get_duration_seconds "$expected_output" 2>/dev/null || true)"
+
+        if [[ -z "$source_duration" || -z "$output_duration" ]]; then
+            log_warn "Not deleting source ($reason): unable to read durations for verification"
+            return 1
+        fi
+
+        delta=$(( source_duration - output_duration ))
+        if (( delta < 0 )); then
+            delta=$(( -delta ))
+        fi
+
+        delta_pct="$(awk -v d="$delta" -v s="$source_duration" 'BEGIN { if (s <= 0) { print "9999" } else { printf "%.3f", (d * 100.0) / s } }')"
+
+        # Permit deletion when either relative or absolute tolerance is satisfied.
+        if ! awk -v d="$delta" -v sec="$DELETE_SKIPPED_DURATION_TOLERANCE_SEC" -v p="$delta_pct" -v pct="$DELETE_SKIPPED_DURATION_TOLERANCE_PCT" 'BEGIN { exit ! (d <= sec || p <= pct) }'; then
+            log_warn "Not deleting source ($reason): duration mismatch source=${source_duration}s output=${output_duration}s delta=${delta}s (${delta_pct}%) exceeds tolerances=${DELETE_SKIPPED_DURATION_TOLERANCE_PCT}%/${DELETE_SKIPPED_DURATION_TOLERANCE_SEC}s"
+            return 1
+        fi
+    fi
+
+    rm "$source_file"
+    log_info "Deleted source file ($reason): $source_file"
+    return 0
+}
+
 process_file() {
     local file="$1"
 
@@ -35,6 +85,11 @@ process_file() {
 
     if [[ -f "$output_path" ]]; then
         log_info "Skipping, final file already exists: $file"
+
+        if [[ "$DELETE_SKIPPED_TS" == "true" ]]; then
+            delete_source_if_output_verified "$file" "$output_path" "skip-existing-output" || true
+        fi
+
         return
     fi
 
@@ -112,8 +167,7 @@ process_file() {
         ntfy_send "$ntfy_message"
 
         if [[ "$DELETE_TS" == "true" ]]; then
-            rm "$file"
-            log_info "Deleted source file: $file"
+            delete_source_if_output_verified "$file" "$output_path" "post-success" || true
         fi
         rm -f "$progress_log" "$meta_file"
         return 0
