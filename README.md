@@ -51,6 +51,82 @@ Filename support note:
 
 Contributor setup, local validation commands, commit conventions, and release flow are documented in [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Web Dashboard
+
+A lightweight status dashboard is built into the container and starts automatically alongside the processor. Open `http://<host>:8080` in a browser to see:
+
+- **Now processing** — current file, elapsed time, live progress bar, speed, and ETA
+- **Queue** — remaining files to process
+- **Completed** — last 30 finished files
+- **Errors** — any failed files
+
+Port is configurable via the `WEB_PORT` environment variable (default `8080`).
+
+### JSON API
+
+The dashboard exposes a machine-readable endpoint at `http://<host>:8080/api/status` (refreshed every poll, no auth). Useful for integrating with external tools:
+
+**Homepage (gethomepage.dev) custom API widget:**
+
+```yaml
+- ts-to-mkv:
+    icon: mdi-video-convert
+    href: http://your-host:8080
+    widget:
+      type: customapi
+      url: http://your-host:8080/api/status
+      refreshInterval: 5000
+      mappings:
+        - field: done_count
+          label: Done
+        - field: queue_remaining_count
+          label: Queued
+        - field: error_count
+          label: Errors
+        - field:
+            current: progress_pct
+          label: Progress
+          suffix: "%"
+```
+
+**Home Assistant REST sensors:**
+
+```yaml
+sensor:
+  - platform: rest
+    name: ts_to_mkv_done
+    resource: http://your-host:8080/api/status
+    value_template: "{{ value_json.done_count }}"
+    scan_interval: 10
+    unit_of_measurement: files
+
+  - platform: rest
+    name: ts_to_mkv_queued
+    resource: http://your-host:8080/api/status
+    value_template: "{{ value_json.queue_remaining_count }}"
+    scan_interval: 10
+    unit_of_measurement: files
+
+  - platform: rest
+    name: ts_to_mkv_current_file
+    resource: http://your-host:8080/api/status
+    value_template: >-
+      {% if value_json.current %}
+        {{ value_json.current.display_path }}
+      {% else %}
+        idle
+      {% endif %}
+    scan_interval: 10
+
+  - platform: rest
+    name: ts_to_mkv_progress
+    resource: http://your-host:8080/api/status
+    value_template: >-
+      {{ value_json.current.progress_pct if value_json.current else 0 }}
+    scan_interval: 10
+    unit_of_measurement: "%"
+```
+
 ## Logs
 
 Runtime logs are written under [app/logs](app/logs):
