@@ -46,7 +46,7 @@ get_encoding_params() {
 remux_file() {
     local input_file="$1"
     local output_path="$2"
-    local progress_log="${LOG_DIR}/ffmpeg_progress.log"
+    local progress_log="${3:-${LOG_DIR}/ffmpeg_progress.log}"
 
     log_info "Attempting to remux $input_file"
     if ffmpeg -hide_banner -loglevel error -progress "$progress_log" -stats_period 2 \
@@ -68,6 +68,7 @@ encode_file() {
     local output_path="$2"
     local duration_sec="$3"
     local resolution="$4"
+    local progress_log="${5:-${LOG_DIR}/ffmpeg_progress.log}"
 
     declare -A encoding_params
     get_encoding_params "$resolution" encoding_params
@@ -76,7 +77,7 @@ encode_file() {
     local encode_log="$LOG_DIR/ffmpeg_encode_$(basename "$input_file").log"
 
     # Try primary codec first
-    if try_encode_with_codec "$input_file" "$output_path" "$duration_sec" "$resolution" "$VIDEO_CODEC" "$encode_log"; then
+    if try_encode_with_codec "$input_file" "$output_path" "$duration_sec" "$resolution" "$VIDEO_CODEC" "$encode_log" "$progress_log"; then
         return 0
     fi
 
@@ -85,7 +86,7 @@ encode_file() {
         log_warn "Hardware encoding failed for $input_file, trying fallback codec: $FALLBACK_CODEC"
         rm -f "$output_path" # Clean up failed attempt
         
-        if try_encode_with_codec "$input_file" "$output_path" "$duration_sec" "$resolution" "$FALLBACK_CODEC" "$encode_log"; then
+        if try_encode_with_codec "$input_file" "$output_path" "$duration_sec" "$resolution" "$FALLBACK_CODEC" "$encode_log" "$progress_log"; then
             return 0
         fi
     fi
@@ -101,6 +102,7 @@ try_encode_with_codec() {
     local resolution="$4"
     local codec="$5"
     local encode_log="$6"
+    local progress_log="${7:-${LOG_DIR}/ffmpeg_progress.log}"
 
     declare -A encoding_params
     get_encoding_params "$resolution" encoding_params
@@ -109,7 +111,7 @@ try_encode_with_codec() {
     local ffmpeg_cmd=(ffmpeg -hide_banner -loglevel error)
 
     # Live progress output for the web dashboard
-    ffmpeg_cmd+=(-progress "${LOG_DIR}/ffmpeg_progress.log" -stats_period 2)
+    ffmpeg_cmd+=(-progress "$progress_log" -stats_period 2)
 
     # Add hardware acceleration for QSV
     if [[ "$codec" == "hevc_qsv" ]]; then

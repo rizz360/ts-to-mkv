@@ -1,14 +1,22 @@
 #!/usr/bin/env python3
 """ts-to-mkv web dashboard — serves a status page by reading log files."""
 
+import glob
 import http.server
 import json
 import os
+import sys
 import time
 from datetime import datetime, timedelta
 
 LOG_DIR = os.environ.get("LOG_DIR", "/app/logs")
-PORT = int(os.environ.get("WEB_PORT", "8080"))
+
+try:
+    PORT = int(os.environ.get("WEB_PORT", "8080"))
+except ValueError:
+    _raw_port = os.environ.get("WEB_PORT", "")
+    print(f"[dashboard] WARNING: WEB_PORT '{_raw_port}' is not a valid integer; falling back to 8080", flush=True)
+    PORT = 8080
 
 
 # ---------------------------------------------------------------------------
@@ -22,6 +30,36 @@ def _read_lines(path):
             return [l.rstrip("\n") for l in fh if l.strip()]
     except FileNotFoundError:
         return []
+
+
+def _read_tail_lines(path, n):
+    """Return the last *n* non-empty stripped lines efficiently (reads from end)."""
+    try:
+        with open(path, "rb") as fh:
+            fh.seek(0, 2)
+            file_size = fh.tell()
+            if file_size == 0:
+                return []
+            # Read a chunk from the end large enough to contain n lines
+            chunk_size = min(max(n * 200, 8192), file_size)
+            fh.seek(max(0, file_size - chunk_size))
+            data = fh.read().decode("utf-8", errors="replace")
+            lines = [l.strip() for l in data.split("\n") if l.strip()]
+            return lines[-n:]
+    except FileNotFoundError:
+        return []
+
+
+def _count_lines(path):
+    """Count non-empty lines in a file without loading it fully into memory."""
+    try:
+        count = 0
+        with open(path, "rb") as fh:
+            for chunk in iter(lambda: fh.read(65536), b""):
+                count += chunk.count(b"\n")
+        return count
+    except FileNotFoundError:
+        return 0
 
 
 def _read_text(path):
@@ -72,28 +110,43 @@ def _strip_input_prefix(path):
     return path
 
 
+def _get_active_jobs():
+    """Return list of (meta, progress_data) from per-job current_meta.{PID}.json files."""
+    jobs = []
+    for meta_path in sorted(glob.glob(os.path.join(LOG_DIR, "current_meta.*.json"))):
+        try:
+            with open(meta_path, "r") as fh:
+                meta = json.load(fh)
+            if not meta:
+                continue
+            # Filename: current_meta.{PID}.json → extract PID
+            parts = os.path.basename(meta_path).split(".")
+            # Validate expected format: ['current_meta', '<pid>', 'json']
+            if len(parts) != 3 or parts[0] != "current_meta" or parts[2] != "json":
+                continue
+            pid = parts[1]
+            progress_path = os.path.join(LOG_DIR, f"ffmpeg_progress.{pid}.log")
+            progress_data = _parse_ffmpeg_progress(progress_path)
+            jobs.append((meta, progress_data))
+        except (FileNotFoundError, json.JSONDecodeError):
+            pass
+    return jobs
+
+
 # ---------------------------------------------------------------------------
 # Status builder
 # ---------------------------------------------------------------------------
 
 def get_status():
-    # Currently processing file
-    current_lines = _read_lines(os.path.join(LOG_DIR, "current.log"))
-    current_file = current_lines[-1] if current_lines else ""
+    # Active jobs — one per running process (safe for parallel mode)
+    active_jobs = _get_active_jobs()
+    current_files_set = {meta.get("file", "") for meta, _ in active_jobs}
 
-    # Metadata written by file_processor.sh
-    meta = {}
-    try:
-        with open(os.path.join(LOG_DIR, "current_meta.json"), "r") as fh:
-            meta = json.load(fh)
-    except (FileNotFoundError, json.JSONDecodeError):
-        pass
-
-    # ffmpeg live progress
-    progress_data = _parse_ffmpeg_progress(os.path.join(LOG_DIR, "ffmpeg_progress.log"))
-
-    # Completed / errored
-    done_files = _read_lines(os.path.join(LOG_DIR, "done.log"))
+    # Completed / errored — read only a tail to stay O(1) for long-running containers.
+    # Use a generous tail for the done set so queue filtering remains accurate.
+    _DONE_TAIL = 2000
+    done_tail = _read_tail_lines(os.path.join(LOG_DIR, "done.log"), _DONE_TAIL)
+    done_count = _count_lines(os.path.join(LOG_DIR, "done.log"))
     error_files = _read_lines(os.path.join(LOG_DIR, "error.log"))
 
     # Queue — prefer queue.log written at startup, fall back to poll_queue.log
@@ -101,20 +154,22 @@ def get_status():
     if not queue_files:
         queue_files = _read_lines(os.path.join(LOG_DIR, "poll_queue.log"))
 
-    done_set = set(done_files)
+    done_set = set(done_tail)
     error_set = set(error_files)
     remaining_queue = [
         f for f in queue_files
-        if f not in done_set and f not in error_set and f != current_file
+        if f not in done_set and f not in error_set and f not in current_files_set
     ]
 
-    # Build current-job info
+    # Build current-job info from the first active job (most recently started)
     current_info = None
-    if current_file or meta:
+    if active_jobs:
+        meta, progress_data = active_jobs[0]
         now = int(time.time())
         started = meta.get("started", now)
         duration_sec = float(meta.get("duration_sec") or 0)
         elapsed_sec = max(0, now - started)
+        current_file = meta.get("file", "")
 
         # Progress from ffmpeg
         progress_pct = None
@@ -136,8 +191,8 @@ def get_status():
                 pass
 
         current_info = {
-            "file": os.path.basename(current_file or meta.get("file", "")),
-            "display_path": _strip_input_prefix(current_file or meta.get("file", "")),
+            "file": os.path.basename(current_file),
+            "display_path": _strip_input_prefix(current_file),
             "started_fmt": datetime.fromtimestamp(started).strftime("%Y-%m-%d %H:%M:%S"),
             "elapsed_fmt": _fmt_duration(elapsed_sec),
             "duration_fmt": _fmt_duration(duration_sec) if duration_sec else None,
@@ -147,6 +202,7 @@ def get_status():
             "bitrate": progress_data.get("bitrate") or None,
             "eta_fmt": _fmt_duration(eta_sec),
             "mode": meta.get("mode") or None,
+            "active_job_count": len(active_jobs),
         }
 
     return {
@@ -154,8 +210,8 @@ def get_status():
         "queue_remaining": [_strip_input_prefix(f) for f in remaining_queue],
         "queue_total": len(queue_files),
         "queue_remaining_count": len(remaining_queue),
-        "done_recent": [_strip_input_prefix(f) for f in done_files[-30:][::-1]],
-        "done_count": len(done_files),
+        "done_recent": [_strip_input_prefix(f) for f in done_tail[-30:][::-1]],
+        "done_count": done_count,
         "errors": [_strip_input_prefix(f) for f in error_files],
         "error_count": len(error_files),
         "updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),

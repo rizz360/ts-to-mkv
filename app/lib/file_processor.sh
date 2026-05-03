@@ -22,7 +22,6 @@ process_file() {
     fi
 
     log_info "===================="
-    echo "$file" > "$LOG_DIR/current.log"
 
     local relative_path="${file#${INPUT_DIR}/}"
     local base_path="${relative_path%.ts}"
@@ -63,25 +62,28 @@ process_file() {
     log_info "Processing ${file} (${video_info[size_gb]}GB, ${video_info[res_label]}, ${video_info[video_codec]}, ${video_info[video_bitrate]} bps)"
     log_info "Using temporary directory: $temp_job_dir"
 
-    # Write metadata for the web dashboard; clear stale progress from any prior job.
-    > "$LOG_DIR/ffmpeg_progress.log"
+    # Write per-job metadata for the web dashboard, keyed by PID to avoid
+    # collisions when ENABLE_PARALLEL_PROCESSING=true.
+    local progress_log="${LOG_DIR}/ffmpeg_progress.${BASHPID}.log"
+    local meta_file="${LOG_DIR}/current_meta.${BASHPID}.json"
+    > "$progress_log"
     if command -v jq &>/dev/null; then
         jq -nc \
             --arg file "$file" \
             --argjson started "$(date +%s)" \
             --argjson duration "${video_info[duration]:-0}" \
             '{file: $file, started: $started, duration_sec: $duration}' \
-            > "$LOG_DIR/current_meta.json"
+            > "$meta_file"
     fi
 
     local success=false
 
     if should_encode "$file" "${video_info[size_gb]}" "${video_info[res_label]}" "${video_info[video_codec]}" "${video_info[video_bitrate]}"; then
-        if encode_file "$file" "$temp_output_path" "${video_info[duration]}" "${video_info[res_label]}"; then
+        if encode_file "$file" "$temp_output_path" "${video_info[duration]}" "${video_info[res_label]}" "$progress_log"; then
             success=true
         fi
     else
-        if remux_file "$file" "$temp_output_path"; then
+        if remux_file "$file" "$temp_output_path" "$progress_log"; then
             success=true
         fi
     fi
@@ -113,13 +115,13 @@ process_file() {
             rm "$file"
             log_info "Deleted source file: $file"
         fi
-        > "$LOG_DIR/current_meta.json"
+        rm -f "$progress_log" "$meta_file"
         return 0
     else
         log_error "Failed to process $file"
         echo "$file" >> "$LOG_DIR/error.log"
         cleanup "failure"
-        > "$LOG_DIR/current_meta.json"
+        rm -f "$progress_log" "$meta_file"
         return 1
     fi
 }

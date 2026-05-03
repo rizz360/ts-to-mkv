@@ -64,7 +64,7 @@ Port is configurable via the `WEB_PORT` environment variable (default `8080`).
 
 ### JSON API
 
-The dashboard exposes a machine-readable endpoint at `http://<host>:8080/api/status` (refreshed every poll, no auth). Useful for integrating with external tools:
+The dashboard exposes a machine-readable endpoint at `http://<host>:8080/api/status` (on-demand, no auth; the dashboard JS polls it every 3 seconds). Useful for integrating with external tools:
 
 **Homepage (gethomepage.dev) custom API widget:**
 

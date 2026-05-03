@@ -22,6 +22,10 @@ main() {
     # Load and validate configuration
     load_config
     validate_config
+
+    # Start web dashboard after config is loaded so LOG_DIR and WEB_PORT are resolved.
+    export LOG_DIR WEB_PORT
+    python3 /app/web/server.py &
     
     # Check dependencies
     check_dependencies
@@ -51,9 +55,6 @@ main() {
             ;;
     esac
 }
-
-# Start web dashboard in the background (reads LOG_DIR / WEB_PORT from env)
-python3 /app/web/server.py &
 
 # Run main function
 main "$@"
