@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.4.0](https://github.com/rizz360/ts-to-mkv/compare/ts-to-mkv-v2.3.0...ts-to-mkv-v2.4.0) (2026-05-03)
+
+
+### Features
+
+* **config:** add options for deleting skipped .ts files and duration verification ([52382fa](https://github.com/rizz360/ts-to-mkv/commit/52382fa8bc8a5085af5da2c5c3bcc6f38aed9851))
+* **config:** add options for deleting skipped .ts files and duration… ([fe89fe6](https://github.com/rizz360/ts-to-mkv/commit/fe89fe6581f3153b9dd3b8b08a5a56b1731bec5f))
+
+
+### Bug Fixes
+
+* guard ffprobe pipeline, harden rm error handling, add duration-verification smoke tests ([d4f5801](https://github.com/rizz360/ts-to-mkv/commit/d4f5801da7532c80854567f75ba699d056d8ef23))
+
 ## [2.3.0](https://github.com/rizz360/ts-to-mkv/compare/ts-to-mkv-v2.2.3...ts-to-mkv-v2.3.0) (2026-05-03)
 
 
