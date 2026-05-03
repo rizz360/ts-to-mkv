@@ -23,6 +23,10 @@ mkdir -p "$INPUT_DIR/sub" "$OUTPUT_DIR" "$LOG_DIR" "$TEMP_DIR"
 
 # Provide required globals used by file_processor.sh
 DELETE_TS=false
+DELETE_SKIPPED_TS=false
+DELETE_SKIPPED_VERIFY_DURATION=false
+DELETE_SKIPPED_DURATION_TOLERANCE_PCT=2.5
+DELETE_SKIPPED_DURATION_TOLERANCE_SEC=120
 CLEANUP_TEMP_ON_FAILURE=true
 
 log_info() { :; }
@@ -95,9 +99,64 @@ if [[ -f "$INPUT_DIR/sub/delete_me.ts" ]]; then
     exit 1
 fi
 
-# Case 3: Preserve deep show/season folder structure.
+# Case 3: Delete skipped source when expected output already exists and safeguard passes.
+DELETE_TS=false
+DELETE_SKIPPED_TS=true
+printf "smoke-data-3" > "$INPUT_DIR/sub/skip_delete.ts"
+printf "already-converted" > "$OUTPUT_DIR/sub/skip_delete.TV.720p.mkv"
+process_file "$INPUT_DIR/sub/skip_delete.ts"
+
+if [[ -f "$INPUT_DIR/sub/skip_delete.ts" ]]; then
+    echo "Smoke test failed: skipped source should be deleted when DELETE_SKIPPED_TS=true and expected output exists"
+    exit 1
+fi
+
+# Case 4: Keep skipped source when expected output is empty (safeguard).
+printf "smoke-data-4" > "$INPUT_DIR/sub/skip_keep.ts"
+: > "$OUTPUT_DIR/sub/skip_keep.TV.720p.mkv"
+process_file "$INPUT_DIR/sub/skip_keep.ts"
+
+if [[ ! -f "$INPUT_DIR/sub/skip_keep.ts" ]]; then
+    echo "Smoke test failed: skipped source should be preserved when expected output is empty"
+    exit 1
+fi
+
+# Case 5: Delete skipped source when duration verification passes (within tolerance).
+DELETE_SKIPPED_TS=true
+DELETE_SKIPPED_VERIFY_DURATION=true
+printf "smoke-data-5" > "$INPUT_DIR/sub/skip_verify_ok.ts"
+printf "already-converted" > "$OUTPUT_DIR/sub/skip_verify_ok.TV.720p.mkv"
+# Stub get_duration_seconds to return identical durations so delta is within tolerance.
+get_duration_seconds() { echo "3600"; }
+process_file "$INPUT_DIR/sub/skip_verify_ok.ts"
+
+if [[ -f "$INPUT_DIR/sub/skip_verify_ok.ts" ]]; then
+    echo "Smoke test failed: skipped source should be deleted when duration verification passes"
+    exit 1
+fi
+
+# Case 6: Keep skipped source when duration mismatch exceeds tolerance.
+printf "smoke-data-6" > "$INPUT_DIR/sub/skip_verify_fail.ts"
+printf "already-converted" > "$OUTPUT_DIR/sub/skip_verify_fail.TV.720p.mkv"
+# Stub get_duration_seconds to return a large mismatch (3600s vs 100s).
+get_duration_seconds() {
+    local f="$1"
+    if [[ "$f" == *.ts ]]; then echo "3600"; else echo "100"; fi
+}
+process_file "$INPUT_DIR/sub/skip_verify_fail.ts"
+
+if [[ ! -f "$INPUT_DIR/sub/skip_verify_fail.ts" ]]; then
+    echo "Smoke test failed: skipped source should be preserved when duration mismatch exceeds tolerance"
+    exit 1
+fi
+
+# Reset duration verification flags before remaining tests.
+DELETE_SKIPPED_VERIFY_DURATION=false
+unset -f get_duration_seconds
+
+# Case 7: Preserve deep show/season folder structure.
 mkdir -p "$INPUT_DIR/shows/Example Show/SEASON 01"
-printf "smoke-data-3" > "$INPUT_DIR/shows/Example Show/SEASON 01/Some Random Recording S01E02.ts"
+printf "smoke-data-7" > "$INPUT_DIR/shows/Example Show/SEASON 01/Some Random Recording S01E02.ts"
 process_file "$INPUT_DIR/shows/Example Show/SEASON 01/Some Random Recording S01E02.ts"
 
 EXPECTED_OUTPUT_3="$OUTPUT_DIR/shows/Example Show/SEASON 01/Some Random Recording S01E02.TV.720p.mkv"
@@ -106,7 +165,7 @@ if [[ ! -f "$EXPECTED_OUTPUT_3" ]]; then
     exit 1
 fi
 
-# Case 4: Temp job directory generation must be unique for same basename in different paths.
+# Case 8: Temp job directory generation must be unique for same basename in different paths.
 temp_a="$(create_temp_job_dir "shows/Series A/SEASON 01/Episode S01E01")"
 temp_b="$(create_temp_job_dir "shows/Series B/SEASON 01/Episode S01E01")"
 

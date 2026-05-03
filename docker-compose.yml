@@ -31,6 +31,14 @@ services:
       # --- File Handling ---
       # Delete .ts files after success
       DELETE_TS: "true"
+      # Delete skipped .ts files when the exact expected output file already exists and is non-empty
+      DELETE_SKIPPED_TS: "false"
+      # Verify source/output durations before deleting skipped .ts files
+      DELETE_SKIPPED_VERIFY_DURATION: "true"
+      # Max allowed relative duration difference (%) between source and output when deleting skipped .ts files
+      DELETE_SKIPPED_DURATION_TOLERANCE_PCT: "2.5"
+      # Absolute duration fallback tolerance (seconds) for very short clips
+      DELETE_SKIPPED_DURATION_TOLERANCE_SEC: "120"
       # Files larger than this will be re-encoded (HD content only)
       REMUX_SIZE_GB: "3"
       # Retry remux without subtitles if failed

@@ -20,6 +20,10 @@ load_config() {
 
     # Set defaults for all configuration variables
     DELETE_TS="${DELETE_TS:-false}"
+    DELETE_SKIPPED_TS="${DELETE_SKIPPED_TS:-false}"
+    DELETE_SKIPPED_VERIFY_DURATION="${DELETE_SKIPPED_VERIFY_DURATION:-true}"
+    DELETE_SKIPPED_DURATION_TOLERANCE_PCT="${DELETE_SKIPPED_DURATION_TOLERANCE_PCT:-2.5}"
+    DELETE_SKIPPED_DURATION_TOLERANCE_SEC="${DELETE_SKIPPED_DURATION_TOLERANCE_SEC:-120}"
     REMUX_SIZE_GB="${REMUX_SIZE_GB:-3}"
     VIDEO_CODEC="${VIDEO_CODEC:-hevc_qsv}"
     FALLBACK_CODEC="${FALLBACK_CODEC:-libx265}"
@@ -100,4 +104,9 @@ print_config_summary() {
     log_info "- Force encode SD content: $FORCE_ENCODE_SD"
     log_info "- Use CRF mode: $USE_CRF"
     log_info "- Skip already HEVC: $SKIP_ALREADY_HEVC"
+    log_info "- Delete processed sources: $DELETE_TS"
+    log_info "- Delete skipped sources when expected output exists: $DELETE_SKIPPED_TS"
+    log_info "- Verify skipped output duration before delete: $DELETE_SKIPPED_VERIFY_DURATION"
+    log_info "- Skipped delete duration tolerance (%): $DELETE_SKIPPED_DURATION_TOLERANCE_PCT"
+    log_info "- Skipped delete duration tolerance (sec): $DELETE_SKIPPED_DURATION_TOLERANCE_SEC"
 }
