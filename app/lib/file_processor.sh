@@ -16,7 +16,7 @@ create_temp_job_dir() {
 get_duration_seconds() {
     local media_file="$1"
     ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$media_file" \
-        | awk '{printf "%.0f\n", $1}'
+        | awk '{printf "%.0f\n", $1}' || return 1
 }
 
 delete_source_if_output_verified() {
@@ -58,7 +58,10 @@ delete_source_if_output_verified() {
         fi
     fi
 
-    rm "$source_file"
+    if ! rm -f -- "$source_file"; then
+        log_warn "Failed to delete source file ($reason): $source_file"
+        return 1
+    fi
     log_info "Deleted source file ($reason): $source_file"
     return 0
 }
