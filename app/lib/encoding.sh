@@ -50,13 +50,13 @@ remux_file() {
 
     log_info "Attempting to remux $input_file"
     if ffmpeg -hide_banner -loglevel error -progress "$progress_log" -stats_period 2 \
-        -i "$input_file" -map 0 -c copy "$output_path"; then
+        -fflags +genpts -i "$input_file" -map 0 -c copy -avoid_negative_ts make_zero "$output_path"; then
         return 0
     elif [[ "$REMUX_FALLBACK_NO_SUBTITLES" == "true" ]]; then
         log_warn "Remux failed. Retrying without subtitles..."
         rm -f "$output_path"
         if ffmpeg -y -hide_banner -loglevel error -progress "$progress_log" -stats_period 2 \
-            -i "$input_file" -map 0 -sn -c copy "$output_path"; then
+            -fflags +genpts -i "$input_file" -map 0 -sn -c copy -avoid_negative_ts make_zero "$output_path"; then
             return 0
         fi
     fi
@@ -118,14 +118,14 @@ try_encode_with_codec() {
         ffmpeg_cmd+=(-hwaccel qsv -init_hw_device qsv=hw:/dev/dri/renderD128 -filter_hw_device hw)
     fi
     
-    ffmpeg_cmd+=(-i "$input_file" -map 0 -sn -c:v "$codec" -preset "${encoding_params[preset]}")
+    ffmpeg_cmd+=(-fflags +genpts -i "$input_file" -map 0 -sn -c:v "$codec" -preset "${encoding_params[preset]}")
 
     # Add quality parameters (either CRF or bitrate)
     read -ra quality_params <<< "${encoding_params[quality]}"
     ffmpeg_cmd+=("${quality_params[@]}")
 
     # Add audio codec and output
-    ffmpeg_cmd+=(-c:a "$AUDIO_CODEC" -y "$output_path")
+    ffmpeg_cmd+=(-c:a "$AUDIO_CODEC" -avoid_negative_ts make_zero -y "$output_path")
 
     log_info "Attempting encoding with $codec: ${ffmpeg_cmd[*]}"
     
