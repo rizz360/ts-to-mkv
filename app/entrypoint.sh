@@ -52,5 +52,8 @@ main() {
     esac
 }
 
+# Start web dashboard in the background (reads LOG_DIR / WEB_PORT from env)
+python3 /app/web/server.py &
+
 # Run main function
 main "$@"

@@ -11,11 +11,17 @@ services:
       - /mnt/input/ts-recordings:/input
       - /mnt/output/mkv-library:/output
     entrypoint: /app/entrypoint.sh
+    ports:
+      - "8080:8080"    # web dashboard
     environment:
       # --- Container Runtime ---
       TZ: Europe/Luxembourg
       PUID: 1000
       PGID: 1000
+
+      # --- Web Dashboard ---
+      # Port for the built-in status dashboard (http://<host>:8080)
+      WEB_PORT: "8080"
 
       # --- Optional External Config File ---
       # TS_TO_MKV_CONFIG takes precedence; set it to a mounted file path to override compose values.

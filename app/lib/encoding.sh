@@ -46,14 +46,17 @@ get_encoding_params() {
 remux_file() {
     local input_file="$1"
     local output_path="$2"
+    local progress_log="${LOG_DIR}/ffmpeg_progress.log"
 
     log_info "Attempting to remux $input_file"
-    if ffmpeg -hide_banner -loglevel error -i "$input_file" -map 0 -c copy "$output_path"; then
+    if ffmpeg -hide_banner -loglevel error -progress "$progress_log" -stats_period 2 \
+        -i "$input_file" -map 0 -c copy "$output_path"; then
         return 0
     elif [[ "$REMUX_FALLBACK_NO_SUBTITLES" == "true" ]]; then
         log_warn "Remux failed. Retrying without subtitles..."
         rm -f "$output_path"
-        if ffmpeg -y -hide_banner -loglevel error -i "$input_file" -map 0 -sn -c copy "$output_path"; then
+        if ffmpeg -y -hide_banner -loglevel error -progress "$progress_log" -stats_period 2 \
+            -i "$input_file" -map 0 -sn -c copy "$output_path"; then
             return 0
         fi
     fi
@@ -104,7 +107,10 @@ try_encode_with_codec() {
 
     # Build ffmpeg command based on codec type
     local ffmpeg_cmd=(ffmpeg -hide_banner -loglevel error)
-    
+
+    # Live progress output for the web dashboard
+    ffmpeg_cmd+=(-progress "${LOG_DIR}/ffmpeg_progress.log" -stats_period 2)
+
     # Add hardware acceleration for QSV
     if [[ "$codec" == "hevc_qsv" ]]; then
         ffmpeg_cmd+=(-hwaccel qsv -init_hw_device qsv=hw:/dev/dri/renderD128 -filter_hw_device hw)
