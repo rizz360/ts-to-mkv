@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.3.0](https://github.com/rizz360/ts-to-mkv/compare/ts-to-mkv-v2.2.3...ts-to-mkv-v2.3.0) (2026-05-03)
+
+
+### Features
+
+* **dashboard:** add live web status dashboard ([2f52f38](https://github.com/rizz360/ts-to-mkv/commit/2f52f381b17c12a2068780e98059b2e47acc0b8a))
+
+
+### Bug Fixes
+
+* **dashboard:** address review feedback on web dashboard PR ([76cbab2](https://github.com/rizz360/ts-to-mkv/commit/76cbab2eda88eb36cf1609087597624118cb96ed))
+
 ## [2.2.3](https://github.com/rizz360/ts-to-mkv/compare/ts-to-mkv-v2.2.2...ts-to-mkv-v2.2.3) (2026-05-02)
 
 
