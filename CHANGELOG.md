@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.2](https://github.com/rizz360/ts-to-mkv/compare/ts-to-mkv-v2.4.1...ts-to-mkv-v2.4.2) (2026-05-04)
+
+
+### Bug Fixes
+
+* **web:** make Homepage progress mapping null-safe when idle ([b585279](https://github.com/rizz360/ts-to-mkv/commit/b585279c6b1bc23ec6a4b389483b0d2527250e81))
+
 ## [2.4.1](https://github.com/rizz360/ts-to-mkv/compare/ts-to-mkv-v2.4.0...ts-to-mkv-v2.4.1) (2026-05-04)
 
 
