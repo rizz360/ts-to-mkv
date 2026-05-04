@@ -1,6 +1,12 @@
 #!/bin/bash
 # Video encoding and remuxing functions
 
+# Bitstream filter that independently normalizes each stream's timestamps to
+# start from zero.  Applied per-stream (-bsf:v / -bsf:a) so audio and video
+# are rebased individually, removing any broadcast-clock offset that would
+# otherwise cause A/V desync in the MKV output.
+_BSF_NORMALIZE_TS="setts=pts=PTS-STARTPTS:dts=DTS-STARTPTS"
+
 get_encoding_params() {
     local resolution="$1"
     local -n params_ref="$2"
@@ -50,13 +56,19 @@ remux_file() {
 
     log_info "Attempting to remux $input_file"
     if ffmpeg -hide_banner -loglevel error -progress "$progress_log" -stats_period 2 \
-        -i "$input_file" -map 0 -c copy "$output_path"; then
+        -fflags +genpts -i "$input_file" -map 0 -c copy \
+        -bsf:v "$_BSF_NORMALIZE_TS" \
+        -bsf:a "$_BSF_NORMALIZE_TS" \
+        "$output_path"; then
         return 0
     elif [[ "$REMUX_FALLBACK_NO_SUBTITLES" == "true" ]]; then
         log_warn "Remux failed. Retrying without subtitles..."
         rm -f "$output_path"
         if ffmpeg -y -hide_banner -loglevel error -progress "$progress_log" -stats_period 2 \
-            -i "$input_file" -map 0 -sn -c copy "$output_path"; then
+            -fflags +genpts -i "$input_file" -map 0 -sn -c copy \
+            -bsf:v "$_BSF_NORMALIZE_TS" \
+            -bsf:a "$_BSF_NORMALIZE_TS" \
+            "$output_path"; then
             return 0
         fi
     fi
@@ -118,14 +130,17 @@ try_encode_with_codec() {
         ffmpeg_cmd+=(-hwaccel qsv -init_hw_device qsv=hw:/dev/dri/renderD128 -filter_hw_device hw)
     fi
     
-    ffmpeg_cmd+=(-i "$input_file" -map 0 -sn -c:v "$codec" -preset "${encoding_params[preset]}")
+    ffmpeg_cmd+=(-fflags +genpts -i "$input_file" -map 0 -sn -c:v "$codec" -preset "${encoding_params[preset]}")
 
     # Add quality parameters (either CRF or bitrate)
     read -ra quality_params <<< "${encoding_params[quality]}"
     ffmpeg_cmd+=("${quality_params[@]}")
 
     # Add audio codec and output
-    ffmpeg_cmd+=(-c:a "$AUDIO_CODEC" -y "$output_path")
+    ffmpeg_cmd+=(-c:a "$AUDIO_CODEC" \
+        -bsf:v "$_BSF_NORMALIZE_TS" \
+        -bsf:a "$_BSF_NORMALIZE_TS" \
+        -y "$output_path")
 
     log_info "Attempting encoding with $codec: ${ffmpeg_cmd[*]}"
     
