@@ -1,3 +1,48 @@
 .DS_Store
 app/logs/*
 *_bak.*
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+*.local
+
+# Private keys and certs
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Coverage and reports
+.coverage
+.coverage.*
+htmlcov/
+
+# Editor and OS artifacts
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build and temp outputs
+dist/
+build/
+tmp/
+temp/

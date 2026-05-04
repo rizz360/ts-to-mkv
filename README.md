@@ -2,8 +2,14 @@
 
 [![CI](https://github.com/rizz360/ts-to-mkv/actions/workflows/ci.yml/badge.svg)](https://github.com/rizz360/ts-to-mkv/actions/workflows/ci.yml)
 [![Release](https://github.com/rizz360/ts-to-mkv/actions/workflows/release.yml/badge.svg)](https://github.com/rizz360/ts-to-mkv/actions/workflows/release.yml)
+[![License: EUPL](https://img.shields.io/badge/License-EUPL-blue.svg)](LICENSE)
+[![Container](https://img.shields.io/badge/Container-ghcr.io-blue?logo=docker)](https://github.com/rizz360/ts-to-mkv/pkgs/container/ts-to-mkv)
 
 A Docker-based tool that converts `.ts` recordings to `.mkv`, preserves folder structure, and applies smart remux/encode decisions with hardware fallback.
+
+## Requirements
+
+- **Docker** (and Docker Compose)
 
 ## Features
 
@@ -148,3 +154,7 @@ Runtime logs are written under [app/logs](app/logs):
 - [SECURITY.md](SECURITY.md)
 - [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 - [SUPPORT.md](SUPPORT.md)
+
+## License
+
+This project is licensed under the EUPL 1.2 — see [LICENSE](LICENSE) for details.
