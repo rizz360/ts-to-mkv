@@ -207,6 +207,7 @@ def get_status():
 
     return {
         "current": current_info,
+        "current_progress_pct": current_info.get("progress_pct") if current_info and current_info.get("progress_pct") is not None else 0,
         "queue_remaining": [_strip_input_prefix(f) for f in remaining_queue],
         "queue_total": len(queue_files),
         "queue_remaining_count": len(remaining_queue),

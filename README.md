@@ -84,8 +84,7 @@ The dashboard exposes a machine-readable endpoint at `http://<host>:8080/api/sta
           label: Queued
         - field: error_count
           label: Errors
-        - field:
-            current: progress_pct
+        - field: current_progress_pct
           label: Progress
           suffix: "%"
 ```
