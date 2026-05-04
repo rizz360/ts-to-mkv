@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.4.1](https://github.com/rizz360/ts-to-mkv/compare/ts-to-mkv-v2.4.0...ts-to-mkv-v2.4.1) (2026-05-04)
+
+
+### Bug Fixes
+
+* add timestamp normalization to fix A/V de-sync in TS to MKV conversion ([19b7c67](https://github.com/rizz360/ts-to-mkv/commit/19b7c6733d5c3989f8898f31414cf720d5a16c03))
+* use per-stream setts BSF to independently normalize A/V timestamps ([51c9389](https://github.com/rizz360/ts-to-mkv/commit/51c93899a1cc00318655d3d82ea574651b2ceecf))
+
 ## [2.4.0](https://github.com/rizz360/ts-to-mkv/compare/ts-to-mkv-v2.3.0...ts-to-mkv-v2.4.0) (2026-05-03)
 
 
