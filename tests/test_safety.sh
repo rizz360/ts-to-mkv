@@ -60,6 +60,7 @@ assert_file_exists "$LIB_DIR/encoding.sh"
 assert_file_exists "$LIB_DIR/file_processor.sh"
 assert_file_exists "$LIB_DIR/file_monitor.sh"
 assert_file_exists "$ROOT_DIR/docker-compose.yml"
+assert_file_exists "$ROOT_DIR/Dockerfile"
 pass "Required modular files exist"
 
 # 2) Legacy artifacts must be gone
@@ -67,13 +68,13 @@ assert_file_absent "$ROOT_DIR/service"
 pass "Legacy files are removed"
 
 # 3) Runtime must point to modular entrypoint
-if ! rg -n "entrypoint:\s*/app/entrypoint\.sh" "$ROOT_DIR/docker-compose.yml" >/dev/null; then
-    fail "docker-compose entrypoint is not modular"
+if ! rg -n '^ENTRYPOINT \["/app/entrypoint\.sh"\]' "$ROOT_DIR/Dockerfile" >/dev/null; then
+    fail "Dockerfile ENTRYPOINT is not modular"
 fi
 if rg -n "entrypoint:\s*/service/" "$ROOT_DIR/docker-compose.yml" >/dev/null; then
     fail "docker-compose still references old service paths"
 fi
-pass "Compose entrypoint is modular"
+pass "Image entrypoint is modular"
 
 # 4) Strict-mode shell footguns must not be present
 assert_no_pattern "grep '\\.ts\\$' \| head -n1" "$APP_DIR/entrypoint.sh $LIB_DIR"
