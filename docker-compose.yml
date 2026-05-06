@@ -11,7 +11,7 @@ services:
       - /mnt/input/ts-recordings:/input
       - /mnt/output/mkv-library:/output
     ports:
-      - "127.0.0.1:${WEB_PORT:-8080}:${WEB_PORT:-8080}"    # web dashboard (localhost only)
+      - "8080:8080"    # web dashboard
     environment:
       # --- Container Runtime ---
       TZ: Europe/Luxembourg
@@ -19,8 +19,7 @@ services:
       PGID: 1000
 
       # --- Web Dashboard ---
-      # Port for the built-in status dashboard (http://<host>:8080)
-      WEB_PORT: "8080"
+      # Dashboard listens on port 8080 and is exposed as 8080 on the host.
 
       # --- Optional External Config File ---
       # TS_TO_MKV_CONFIG takes precedence; set it to a mounted file path to override compose values.

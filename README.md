@@ -67,7 +67,7 @@ A lightweight status dashboard is built into the container and starts automatica
 - **Completed** — last 30 finished files
 - **Errors** — any failed files
 
-Port is configurable via the `WEB_PORT` environment variable (default `8080`).
+The default compose setup publishes dashboard port `8080` on the host as `8080`.
 
 ### JSON API
 
