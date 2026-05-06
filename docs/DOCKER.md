@@ -13,7 +13,6 @@ pull_policy: always
 volumes:
   - /your/input/path:/input
   - /your/output/path:/output
-entrypoint: /app/entrypoint.sh
 ```
 
 Use the compose `environment` block as the primary runtime config source.
