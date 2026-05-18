@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.4.4](https://github.com/rizz360/ts2mkv/compare/ts-to-mkv-v2.4.3...ts-to-mkv-v2.4.4) (2026-05-18)
+
+
+### Bug Fixes
+
+* **ci:** prevent invalid GHCR tags in release workflow ([cb5b6ea](https://github.com/rizz360/ts2mkv/commit/cb5b6ea6f5e42cc6033ef92ecfa82c97921a2c41))
+* **ci:** prevent invalid GHCR tags in release workflow ([5caf6e7](https://github.com/rizz360/ts2mkv/commit/5caf6e7edb40ef2cf971d5dcd523486e3671e901))
+
 ## [2.4.3](https://github.com/rizz360/ts2mkv/compare/ts-to-mkv-v2.4.2...ts-to-mkv-v2.4.3) (2026-05-18)
 
 
