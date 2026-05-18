@@ -57,9 +57,9 @@ jobs:
           images: ghcr.io/${{ github.repository }}
           tags: |
             type=ref,event=tag
-            type=match,pattern=ts2mkv-v(.*),group=1
-            type=match,pattern=ts-to-mkv-v(.*),group=1
-            type=match,pattern=v(.*),group=1
+            type=match,pattern=^ts2mkv-v(.*)$,group=1
+            type=match,pattern=^ts-to-mkv-v(.*)$,group=1
+            type=match,pattern=^v(.*)$,group=1
             type=sha,prefix=sha-
             type=raw,value=latest,enable=${{ steps.release-type.outputs.is_prerelease == 'false' }}
 
