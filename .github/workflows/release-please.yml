@@ -21,12 +21,21 @@ jobs:
       tag_name: ${{ steps.release.outputs.tag_name }}
 
     steps:
+      - name: Validate release token
+        shell: bash
+        run: |
+          if [[ -z "${{ secrets.RELEASE_PLEASE_TOKEN }}" ]]; then
+            echo "RELEASE_PLEASE_TOKEN is required so Release Please PRs trigger workflow checks." >&2
+            echo "Create a PAT secret named RELEASE_PLEASE_TOKEN and re-run this workflow." >&2
+            exit 1
+          fi
+
       - name: Run release-please
         id: release
         uses: googleapis/release-please-action@v4
         with:
           command: manifest
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
 
   publish-ghcr:
     name: Build and Publish GHCR Image
