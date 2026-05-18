@@ -8,7 +8,7 @@ Primary runtime flow is pulling the published GHCR image.
 Use the following mount pattern in [docker-compose.yml](../docker-compose.yml):
 
 ```yaml
-image: ghcr.io/rizz360/ts-to-mkv:latest
+image: ghcr.io/rizz360/ts2mkv:latest
 pull_policy: always
 volumes:
   - /your/input/path:/input
@@ -42,11 +42,11 @@ If you prefer explicit file sourcing inside the container, set `TS_TO_MKV_CONFIG
 ## Verify
 
 ```bash
-docker compose logs -f ts-to-mkv
+docker compose logs -f ts2mkv
 ```
 
 Expected startup message pattern:
-- `ts-to-mkv processor starting in [mode] mode...`
+- `ts2mkv processor starting in [mode] mode...`
 
 ## Filename Support
 
@@ -67,13 +67,13 @@ bash tests/test_modular.sh
 ### Entrypoint syntax
 
 ```bash
-docker compose exec ts-to-mkv bash -n /app/entrypoint.sh
+docker compose exec ts2mkv bash -n /app/entrypoint.sh
 ```
 
 ### Confirm active monitor mode
 
 ```bash
-docker compose exec ts-to-mkv bash -c 'source /app/lib/config.sh && load_config && echo "$MONITOR_MODE"'
+docker compose exec ts2mkv bash -c 'source /app/lib/config.sh && load_config && echo "$MONITOR_MODE"'
 ```
 
 If your storage backend does not propagate inotify events reliably, set `MONITOR_MODE=poll` in [docker-compose.yml](../docker-compose.yml).

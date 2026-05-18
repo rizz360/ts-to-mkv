@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ts-to-mkv web dashboard — serves a status page by reading log files."""
+"""ts2mkv web dashboard — serves a status page by reading log files."""
 
 import glob
 import http.server
@@ -229,7 +229,7 @@ HTML = """\
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ts-to-mkv dashboard</title>
+<title>ts2mkv dashboard</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -397,7 +397,7 @@ HTML = """\
 <body>
 
 <header>
-  <h1><span id="dot"></span>ts-to-mkv</h1>
+  <h1><span id="dot"></span>ts2mkv</h1>
   <span id="updated">Loading…</span>
 </header>
 

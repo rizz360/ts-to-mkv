@@ -1,5 +1,5 @@
 #!/bin/bash
-# Main script - ts-to-mkv processor
+# Main script - ts2mkv processor
 # Modular refactored version
 
 # Get the directory of this script
@@ -34,7 +34,7 @@ main() {
     init_directories
     
     # Send startup notification
-    ntfy_send "ts-to-mkv processor starting in $MONITOR_MODE mode..."
+    ntfy_send "ts2mkv processor starting in $MONITOR_MODE mode..."
 
     # Process any existing files first
     process_existing_files
