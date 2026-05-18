@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.4.3](https://github.com/rizz360/ts2mkv/compare/ts-to-mkv-v2.4.2...ts-to-mkv-v2.4.3) (2026-05-18)
+
+
+### Bug Fixes
+
+* **ci:** require release-please PAT to trigger PR workflows ([538a945](https://github.com/rizz360/ts2mkv/commit/538a9454f1ef31e9283ff511e8e5c984fa8a26c5))
+* **ci:** require release-please PAT to trigger PR workflows ([4f1c5a2](https://github.com/rizz360/ts2mkv/commit/4f1c5a2e4989d68b2a2f82c73801b42db152742f))
+* keep legacy release tag prefix and correct docker log docs ([c15bc9e](https://github.com/rizz360/ts2mkv/commit/c15bc9e8432c7b054a46d9302e0a29ce2d5e5528))
+
 ## [2.4.2](https://github.com/rizz360/ts2mkv/compare/ts-to-mkv-v2.4.1...ts-to-mkv-v2.4.2) (2026-05-04)
 
 
