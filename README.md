@@ -1,9 +1,9 @@
-# ts-to-mkv 🧼📺
+# ts2mkv 🧼📺
 
-[![CI](https://github.com/rizz360/ts-to-mkv/actions/workflows/ci.yml/badge.svg)](https://github.com/rizz360/ts-to-mkv/actions/workflows/ci.yml)
-[![Release](https://github.com/rizz360/ts-to-mkv/actions/workflows/release.yml/badge.svg)](https://github.com/rizz360/ts-to-mkv/actions/workflows/release.yml)
+[![CI](https://github.com/rizz360/ts2mkv/actions/workflows/ci.yml/badge.svg)](https://github.com/rizz360/ts2mkv/actions/workflows/ci.yml)
+[![Release](https://github.com/rizz360/ts2mkv/actions/workflows/release.yml/badge.svg)](https://github.com/rizz360/ts2mkv/actions/workflows/release.yml)
 [![License: EUPL](https://img.shields.io/badge/License-EUPL-blue.svg)](LICENSE)
-[![Container](https://img.shields.io/badge/Container-ghcr.io-blue?logo=docker)](https://github.com/rizz360/ts-to-mkv/pkgs/container/ts-to-mkv)
+[![Container](https://img.shields.io/badge/Container-ghcr.io-blue?logo=docker)](https://github.com/rizz360/ts2mkv/pkgs/container/ts2mkv)
 
 A Docker-based tool that converts `.ts` recordings to `.mkv`, preserves folder structure, and applies smart remux/encode decisions with hardware fallback.
 
@@ -76,7 +76,7 @@ The dashboard exposes a machine-readable endpoint at `http://<host>:8080/api/sta
 **Homepage (gethomepage.dev) custom API widget:**
 
 ```yaml
-- ts-to-mkv:
+- ts2mkv:
     icon: mdi-video-convert
     href: http://your-host:8080
     widget:
@@ -100,21 +100,21 @@ The dashboard exposes a machine-readable endpoint at `http://<host>:8080/api/sta
 ```yaml
 sensor:
   - platform: rest
-    name: ts_to_mkv_done
+    name: ts2mkv_done
     resource: http://your-host:8080/api/status
     value_template: "{{ value_json.done_count }}"
     scan_interval: 10
     unit_of_measurement: files
 
   - platform: rest
-    name: ts_to_mkv_queued
+    name: ts2mkv_queued
     resource: http://your-host:8080/api/status
     value_template: "{{ value_json.queue_remaining_count }}"
     scan_interval: 10
     unit_of_measurement: files
 
   - platform: rest
-    name: ts_to_mkv_current_file
+    name: ts2mkv_current_file
     resource: http://your-host:8080/api/status
     value_template: >-
       {% if value_json.current %}
@@ -125,7 +125,7 @@ sensor:
     scan_interval: 10
 
   - platform: rest
-    name: ts_to_mkv_progress
+    name: ts2mkv_progress
     resource: http://your-host:8080/api/status
     value_template: >-
       {{ value_json.current.progress_pct if value_json.current else 0 }}

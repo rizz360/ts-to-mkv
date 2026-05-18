@@ -1,10 +1,10 @@
 services:
-  ts-to-mkv:
-    image: ghcr.io/rizz360/ts-to-mkv:latest
+  ts2mkv:
+    image: ghcr.io/rizz360/ts2mkv:latest
     pull_policy: always
     # Local development fallback:
     # build: .
-    container_name: ts-to-mkv
+    container_name: ts2mkv
     devices:
       - /dev/dri:/dev/dri
     volumes:

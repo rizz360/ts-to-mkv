@@ -18,7 +18,7 @@ ntfy_send() {
     local message="$1"
     if [[ -n "${NTFY_URL:-}" ]]; then
         # Keep notifications best-effort and avoid blocking the processing loop.
-        curl -s --connect-timeout 5 --max-time 10 -X POST -H "Title: ts-to-mkv" -H "Priority: default" \
+        curl -s --connect-timeout 5 --max-time 10 -X POST -H "Title: ts2mkv" -H "Priority: default" \
             -d "$message" \
             "$NTFY_URL" > /dev/null || true
     fi

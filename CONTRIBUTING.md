@@ -1,4 +1,4 @@
-# Contributing to ts-to-mkv
+# Contributing to ts2mkv
 
 Thanks for contributing.
 

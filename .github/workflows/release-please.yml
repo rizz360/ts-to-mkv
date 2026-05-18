@@ -47,6 +47,9 @@ jobs:
 
           TAG="${{ needs.release-please.outputs.tag_name }}"
           if [[ -z "$TAG" ]]; then
+            TAG="$(git tag --list 'ts2mkv-v*' --sort=-version:refname | head -n1)"
+          fi
+          if [[ -z "$TAG" ]]; then
             TAG="$(git tag --list 'ts-to-mkv-v*' --sort=-version:refname | head -n1)"
           fi
           if [[ -z "$TAG" ]]; then
@@ -79,7 +82,9 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${{ steps.release-tag.outputs.tag }}"
-          if [[ "$TAG" == ts-to-mkv-v* ]]; then
+          if [[ "$TAG" == ts2mkv-v* ]]; then
+            VERSION="${TAG#ts2mkv-v}"
+          elif [[ "$TAG" == ts-to-mkv-v* ]]; then
             VERSION="${TAG#ts-to-mkv-v}"
           elif [[ "$TAG" == v* ]]; then
             VERSION="${TAG#v}"
