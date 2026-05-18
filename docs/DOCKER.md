@@ -46,6 +46,9 @@ docker compose logs -f ts2mkv
 ```
 
 Expected startup message pattern:
+- `YYYY-MM-DD HH:MM:SS INFO: Running in [mode] mode`
+
+Optional ntfy-only startup notification (only when `NTFY_URL` is set):
 - `ts2mkv processor starting in [mode] mode...`
 
 ## Filename Support
